@@ -1,0 +1,25 @@
+# Research, strategy and spikes: never committed
+internal/
+
+# Secrets: keys live in ~/.near-credentials, values never in the repo
+.env
+.env.*
+!.env.example
+*.key
+*-credentials.json
+
+# Rust / NEAR build output
+target/
+*.wasm
+neardev/
+
+# Node
+node_modules/
+dist/
+.vite/
+.vercel/
+
+# Tool scratch
+.playwright-mcp/
+.impeccable/
+.DS_Store
