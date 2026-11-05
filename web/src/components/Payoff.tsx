@@ -104,6 +104,10 @@ export function Payoff({ series, board }: { series: Series; board: Board }) {
   const splitId = `payoff-split-${series.series_id}`;
   const tone = (y: number) => (y > 1e-12 ? "gain" : y < -1e-12 ? "loss" : "even");
   const pair = `${q.symbol} per ${u.symbol}`;
+  // A call's line stays low on the left and a put's on the right, so the label goes there if it fits.
+  const refWidth = 7 * `1Click ref. ${fmt(reference ?? 0)}`.length;
+  const refX = sx(reference ?? 0);
+  const refAnchor = call ? (refX - M.left > refWidth ? "end" : "start") : width - M.right - refX > refWidth ? "start" : "end";
   const step = xMax / 100;
   const snap = (x: number) => Math.min(xMax, Math.max(0, Math.round(x / step) * step));
   const ticks = [0, xMax];
@@ -214,7 +218,8 @@ export function Payoff({ series, board }: { series: Series; board: Board }) {
             {reference !== null && reference < xMax && (
               <>
                 <line x1={sx(reference)} x2={sx(reference)} y1={M.top} y2={HEIGHT - M.bottom} className="payoff-ref" />
-                <text x={sx(reference) + 4} y={HEIGHT - M.bottom - 6} className="payoff-note">
+                {/* Up in the corner the line never reaches, clear of the landmarks along the baseline. */}
+                <text x={sx(reference) + (refAnchor === "end" ? -5 : 5)} y={M.top + 10} textAnchor={refAnchor} className="payoff-note">
                   1Click ref. {fmt(reference)}
                 </text>
               </>

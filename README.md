@@ -4,7 +4,7 @@
 
 Built for NEAR HACKATHON, tracks `defi` and `open`.
 
-**Status, 2026-11-05: not on mainnet yet.** Everything below runs locally against byte-identical mainnet Intents bytecode. Current truth: [docs/STATE.md](docs/STATE.md).
+**Live on mainnet:** [warrant-options.vercel.app](https://warrant-options.vercel.app) · contract [`warrant-options.near`](https://nearblocks.io/address/warrant-options.near) · [proof, E-031](docs/EVIDENCE.md). Current truth: [docs/STATE.md](docs/STATE.md).
 
 ## What it is
 
@@ -72,8 +72,8 @@ NEAR technology used:
 
 ## Limits
 
-- **Not on mainnet, not hosted, not audited.** The list of what only mainnet can prove is in [docs/STATE.md](docs/STATE.md).
-- **Keys.** The contract will live on its own account, and whoever holds a full-access key there could deploy new code that moves the collateral. The plan is to delete every key before submission and let anyone check it with one command ([D-035](docs/DECISIONS.md)). Until then, "can't default" depends on that key holder.
+- **Not audited, small amounts.** The series on mainnet are demo sizes, under $2 each. What isn't proven yet is listed in [docs/STATE.md](docs/STATE.md).
+- **Keys.** Whoever holds a full-access key on the contract's account could deploy new code that moves the collateral, and today one exists. The plan is to delete every key before submission and let anyone check it with one command ([D-035](docs/DECISIONS.md)). Until then, "can't default" depends on that key holder.
 - **Retiring.** From 2026-11-26, once the contract holds nothing for anyone, anyone can retire it: its account is deleted and its storage deposit returns to its owner. It moves no tokens, and it refuses while it holds a single unit. A writer who never reclaims keeps it from retiring ([D-038](docs/DECISIONS.md), [SPEC](docs/SPEC.md)).
 - **Storage.** The contract pays for its own storage from a finite balance. Filling it would refuse transactions that add state until someone tops it up.
 - **Wallets.** Wallets with no NEAR account means EVM only. Solana and passkey signers aren't built ([D-030](docs/DECISIONS.md)).

@@ -587,3 +587,26 @@ The P2s: the levers and the board contradicted the sheets; lamp colours broke "b
 - Holding until 2026-11-13: it gives up days of visibility while others are already showing their builds.
 
 **Consequences:** PRs merge with merge commits, not squash, so any commit a deployed contract names stays in `main`'s history.
+
+## D-040 · Intear is the wallet that proves signing · 2026-11-05 · accepted · extends D-036
+**Context:** D-036 has Claude drive a real near-connect wallet from its own account. Two of the obvious choices fail. MyNearWallet now says "Sending, staking and app approvals have ended". Meteor's site answers an automated browser with Cloudflare's "you have been blocked".
+
+**Decision:** Use Intear Wallet, which near-connect lists, for the demo holder. It's open source, imports an existing account by private key, and shows a real approval prompt naming the requesting site, the receiver, the method, the gas and the deposit. Its terms are ordinary self-custody terms and say nothing against scripted use. The key lives only in a gitignored browser profile.
+
+**Alternatives:**
+- Getting past Meteor's block: it's the site's call, and evading it isn't something to build a demo on.
+- near-connect's NEAR CLI wallet: official, and it remains the fallback, but a pasted command says less about what a user sees than a wallet prompt does.
+
+**Consequences:** The film shows Intear's prompt. An EVM wallet's prompt is still unexercised in a real extension.
+
+## D-041 · Calls ask for 90 TGas, the relayer for 140 and two intents at most · 2026-11-05 · accepted · narrows D-030
+**Context:** A transaction is charged 0.001 NEAR per TGas up front. The default of 300 TGas shut out any wallet with under 0.3 NEAR free, and the relayer's key, with its 0.15 NEAR allowance, could never have sent anything. The devnet couldn't show this, because its accounts are rich.
+
+**Decision:** Calls ask for 90 TGas and the relayer for 140, which fits the allowance. The whole refusal room passes at 60, and two relayed exercises burn 30.4. The relayer takes at most two intents per payload, down from four, because four exercises need more gas than the allowance covers. The UI only ever sends one, so nothing a person can do changes.
+
+**Alternatives:**
+- A larger allowance and more NEAR on the relayer: it pays for gas nobody uses, and costs more if the key leaks.
+- A per-action gas table: more to get wrong for no gain, since unused gas comes back.
+
+**Consequences:** A NEAR wallet needs about 0.1 NEAR free to act, and the sheet says so below that. A NEAR deposit keeps 0.15 back.
+
