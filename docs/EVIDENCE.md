@@ -28,6 +28,7 @@ Append-only proof log. Every claim in the README, demo or submission points to a
 | E-023 | 2026-11-05 | Ready for the first commit, and nothing on mainnet has moved underneath us. The live `intents.near` and `wrap.near` code hashes still match the pins, Intents reports nothing paused, and the organizers' page now answers the pre-window question (D-034). On the tree to be committed: contract gate green (71 unit with the new double-exercise test, 2 + 1 sandbox), wasm 322,988 bytes, web lint 0 and build green, 0 secret-scan hits in 140 files. | Output below | pre-commit |
 | E-024 | 2026-11-05 | The deploy is rehearsed and the host checked, with nothing deployed and nothing spent. A fresh clone passes the CI steps. `scripts/run.mjs` runs allow, fund, share, write and three real refusals on the devnet, and both refused exercises refund in full. Its NEP-413 signature over a live 1Click intent passes signature checks in mainnet `simulate_intents`, and a well-formed wrong signature is refused for its signature. The relayer as `vercel build` emits it relays EVM-signed intents end to end on the devnet, after a fix for an import crash that would have hit production. The README's steps were walked in a browser. | Output below | `10-mainnet-runbook` |
 | E-025 | 2026-11-05 | The history split by area is the same work, checked commit by commit. Its tree equals the old single commit except for one reworded line in D-034. The contract commit passes fmt, clippy, the wasm build and 71 unit tests. The web layer passes lint and typecheck and fails `vite build` only for want of `index.html`, as its message says. The web app commit passes lint, typecheck and build. A fresh clone at the tip passes every CI step. A reproducible Docker build works on this machine and embeds its commit; its `code_hash` has not yet been compared across two builds. | Output below | `10-mainnet-runbook` |
+| E-026 | 2026-11-05 | The contract build reproduces: two Docker builds of pushed commit `1ffcc9f` are byte-identical, 323,125 bytes, `code_hash CPKpW1fWrJmpWXLudZP4yuYxHy9Y36tfzwqgs6zuMTng`, and the wasm names that commit. The private repo exists, with 22 issues numbered as the docs cite them. | Output below | `1ffcc9f` |
 
 ## E-001 output
 ~~~text
@@ -768,3 +769,16 @@ wasm        323125 bytes
 snapshot    git+https://github.com/emmanuelist/warrant?rev=42a6209114aa2ff057e6110051c78d59cefff2d7
 code_hash   BRavJ4DHsU97Zc7vxZk2zEBtJ77wccdBQm1SJH5QQbfL
 ~~~
+
+## E-026 output
+~~~
+commit 1ffcc9f1a239463e18fd32eada1ed8a16847410e, cargo near build reproducible-wasm, twice, in Docker
+build 1 exit 0 · 151s   CPKpW1fWrJmpWXLudZP4yuYxHy9Y36tfzwqgs6zuMTng 323125
+build 2 exit 0 · 147s   CPKpW1fWrJmpWXLudZP4yuYxHy9Y36tfzwqgs6zuMTng 323125
+cmp: BYTE-IDENTICAL across two builds
+git+https://github.com/emmanuelist/warrant?rev=1ffcc9f1a239463e18fd32eada1ed8a16847410e
+
+gh repo view emmanuelist/warrant   PRIVATE, default branch main, created by the user 2026-11-05T00:29:18Z
+gh issue list --state all          #1 to #22, numbers as docs/ISSUES.md had them; 8 closed with evidence
+~~~
+

@@ -1,5 +1,5 @@
 # State
-_Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) · git: local commits only, no remote yet (#6)_
+_Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) · repo: private `emmanuelist/warrant`, public on 2026-11-13_
 
 **Name:** Warrant (D-014). **Thesis:** Options that can't default and need no oracle: the collateral is locked inside NEAR Intents until expiry.
 **Milestone:** M1, due 2026-11-05 23:59 UTC · **Deadline:** 2026-11-14 23:59 UTC · 9 days left on 2026-11-05
@@ -12,13 +12,15 @@ _Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) ·
 Claude provides the wallet and records the video. The user only funds, posts on X and confirms the payload (D-036). The demo winds down from 2026-11-26 (#25). What the proof has to beat: D-037 (#11, #18, #20, #21, #22).
 **Blocked on (all the user's):**
 1. **#24:** 5 NEAR to `d0482bffd77daa246ff50cd36cd8c8392548a0cf0fc7d6ccd887a3675f084148`, on the NEAR Protocol network. Blocks M1. The account is still `UNKNOWN_ACCOUNT`. A background check watches for it.
-2. **#6:** permission to create the private repo and push. The harness's permission layer refused `gh repo create --private` + `git push` as an upload, so nothing has left this machine. CI, also part of M1, can't run until this lands.
-3. **#10:** the web app and relayer go on Vercel.
+2. **#23 needs merging, as a merge commit:** the permission layer refuses a merge without review. CI, part of M1, hasn't run yet; it should start once `ci.yml` reaches `main`.
+3. **Narration:** an ElevenLabs key, kept out of this repo (D-037).
+
+The web app and relayer go on Vercel (the user agreed, 2026-11-05). Deploy from `1ffcc9f`'s reproducible build, or rebuild from a later commit: `target/near/options.wasm` is overwritten by any plain `cargo near build`.
 
 ## Works (verified this session)
 | Capability | Verified by | Evidence |
 |---|---|---|
-| The history split by area, each commit checked, a fresh clone green; a reproducible Docker build works (2026-11-05) | Gate per commit, `cargo near build reproducible-wasm` | E-025 |
+| The history split by area, each commit checked, a fresh clone green; two reproducible Docker builds byte-identical (2026-11-05) | Gate per commit, `cargo near build reproducible-wasm` | E-025, E-026 |
 | The deploy rehearsed, nothing spent (2026-11-05): a fresh clone passes the CI steps; every `scripts/run.mjs` step runs on the devnet with real refusals refunded in full; a NEP-413 signature over a live 1Click intent passes mainnet `simulate_intents`; the relayer as `vercel build` emits it passes the relay check on the devnet; the README's steps work in a browser | `scripts/run.mjs`, `swap-check`, `web/scripts/relay-check.mjs`, Playwright | E-024 |
 | Rules re-read: Q-001 counts code from 2026-10-19 (D-034). Live `intents.near` and `wrap.near` still match the pinned hashes, and Intents reports nothing paused (2026-11-05) | curl, RPC | E-023 |
 | Options contract: fmt + clippy `-D warnings`, 71 unit tests, sandbox suites `sandbox` + `signers`; 323.0 KB wasm with `on_auth` (2026-11-05) | Gate | E-004, E-013, E-017, E-023 |

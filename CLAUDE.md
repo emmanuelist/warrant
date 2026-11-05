@@ -11,7 +11,7 @@ Research and strategy are in `internal/research/DOSSIER.md` (gitignored). Read i
 contracts/options/   near-sdk-rs options contract + sandbox tests
 web/                 frontend (Vite + React + TS) and the relayer (web/relay, web/api)
 scripts/             ops scripts: deploy, demo runs, measurements
-docs/                STATE, PLAN, DECISIONS, EVIDENCE, CONTEXT, ISSUES, SPEC, DESIGN
+docs/                STATE, PLAN, DECISIONS, EVIDENCE, CONTEXT, SPEC, DESIGN
 internal/            dossier, raw captures, spikes: gitignored, never commit
 ```
 
@@ -67,7 +67,7 @@ Local UI against real chain state: `cargo test --test devnet -- --ignored --noca
 | Concern | File |
 |---|---|
 | Milestones and exit criteria | docs/PLAN.md (GitHub milestones mirror it once the remote exists) |
-| Work items | docs/ISSUES.md until the GitHub remote exists, then GitHub issues (`gh issue list --milestone "<current>"`) |
+| Work items | GitHub issues (`gh issue list --repo emmanuelist/warrant --milestone "<current>"`) |
 | Why we chose what we chose | docs/DECISIONS.md (append-only) |
 | Proof that things work | docs/EVIDENCE.md (append-only) |
 | Verified facts about dependencies, and traps | docs/CONTEXT.md. Read it before touching any integration. |
