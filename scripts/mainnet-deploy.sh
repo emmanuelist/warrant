@@ -19,8 +19,8 @@ WASM=contracts/options/target/near/options.wasm
 RPC=https://free.rpc.fastnear.com
 HOLDER_DIR="$HOME/.near-credentials/warrant-holder"
 RELAYER_DIR="$HOME/.near-credentials/warrant-relayer"
-# 3.25 NEAR of code stake + 0.45 spare for state (docs/ISSUES.md #1).
-CONTRACT_NEAR='3.7 NEAR'
+# 3.23 NEAR of code stake + 0.27 spare for state, about 26.9 KB (D-037).
+CONTRACT_NEAR='3.5 NEAR'
 HOLDER_NEAR='0.1 NEAR'
 RELAYER_NEAR='0.2 NEAR'
 RELAYER_ALLOWANCE='0.15 NEAR'
