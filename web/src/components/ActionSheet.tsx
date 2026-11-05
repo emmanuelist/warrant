@@ -5,7 +5,7 @@ import { chainNow, useChainSecond } from "../lib/clock";
 import { config, explorer } from "../lib/config";
 import { causeOf } from "../lib/errors";
 import { isEvmAccount } from "../lib/evm";
-import { account, count, countdown, parse, units, utc, utcShort } from "../lib/format";
+import { account, count, countdown, parse, typeable, units, utc, utcShort } from "../lib/format";
 import type { ActionId, Lever } from "../lib/interlock";
 import { breakEven } from "../lib/payoff";
 import { exerciseNet, useReference } from "../lib/reference";
@@ -897,7 +897,11 @@ function CreateForm({
   const [kind, setKind] = useState<Kind>(draft?.kind ?? "call");
   const [underlying, setUnderlying] = useState(draft?.underlying ?? allowed[0] ?? "");
   const [quote, setQuote] = useState(draft?.quote ?? allowed[1] ?? "");
-  const [size, setSize] = useState(draft?.size ?? "1");
+  // A call's collateral is its size, so the form opens at the smallest series the contract takes.
+  const [size, setSize] = useState(() => {
+    const first = board.allowed[0];
+    return draft?.size ?? (first ? typeable(first.min_amount, board.tokens[first.token_id]) : "1");
+  });
   const [strike, setStrike] = useState(draft?.strike ?? "");
   const [typed, setTyped] = useState(draft?.count ?? "1");
   const [preset, setPreset] = useState<Preset>(draft?.preset ?? "1w");
@@ -1052,6 +1056,10 @@ function CreateForm({
           ) : (
             "Collateral is computed from the size, strike and count."
           )}
+        </p>
+        <p className="flex flex-wrap items-baseline justify-between gap-x-3 text-meta text-iron-2">
+          <span>Smallest series the contract takes</span>
+          <Amount raw={minimum} token={collateral} className="text-iron" />
         </p>
         {balance !== null && (
           <p className="flex flex-wrap items-baseline justify-between gap-x-3 text-meta text-iron-2">
