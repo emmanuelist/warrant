@@ -41,6 +41,7 @@ Append-only proof log. Every claim in the README, demo or submission points to a
 | E-036 | 2026-11-05 | The owner account's old key opens nothing. It's gone from the account on three nodes, `intents.near` no longer trusts it, the new key signs on both, and the balances inside Intents didn't move | [Add](https://nearblocks.io/txns/Zd4H9tDZxCgJqh1NCtt6fhcNbApWy6Pq2eTgAYm653P) · [swap on Intents](https://nearblocks.io/txns/CtxtrLNm12XpbB57QzTV5uxFrTCtyrmfvhf9HM4Mcz86) · [delete](https://nearblocks.io/txns/23EeeWrUy1ARERGZv1Tx4z3TUFHgjh4hJ6gm3nMB3Rqj); output below | (this branch) |
 | E-037 | 2026-11-05 | The repo is public and a stranger's path works. Nothing that opening exposes holds a secret: every ref, old commit, issue and PR with its edit history, and all 38 CI logs were scanned first. A clone with no credentials passes `verify.mjs` and rebuilds the tag to the deployed hash. SourceScan rebuilt it on its own, and NearBlocks says "Contract Source Code Verified" and "Contract Locked: Yes". The film's closing card now shows commands that run | [NearBlocks](https://nearblocks.io/address/warrant-options.near/contract/code); output below | (this branch) |
 | E-038 | 2026-11-05 | The demo post is public. It says it was built at NEAR HACKATHON, tags `@NEARProtocol` and `#NEARHackathon`, links the app and the repo, and carries the film. The copy X serves ends on the corrected closing card | [The post](https://x.com/emmanuelcesc/status/2118396029271974299); output below | (this branch) |
+| E-039 | 2026-11-05 | The project is submitted. The user sent it through the hackathon's form, which answered "Submission received" and "Your project has been saved". The form doesn't show its HTTP status, so the 201 itself wasn't seen. The public count went from 159 to 161 around it | `GET https://nearhackathon.com/api/applications`; output below | (this branch) |
 
 ## E-001 output
 ~~~text
@@ -1213,4 +1214,20 @@ links:    https://warrant-options.vercel.app, https://github.com/emmanuelist/war
 media:    video, 139,500 ms
 
 X's 720p copy at 2:16 shows the closing card with four rows: Try it, Code, Check it, Contract (E-037).
+~~~
+
+## E-039 output
+
+~~~text
+The form at https://nearhackathon.com/#apply, sent by the user, answered:
+  SUBMISSION RECEIVED
+  You're on the radar!
+  Your project has been saved. Keep the repository public and the demo post up:
+  results are announced by 18 Nov 2026 · 23:59 UTC.
+
+$ curl -s https://nearhackathon.com/api/applications
+{"count":159}    before it was sent
+{"count":161}    after, 18:32 UTC; others are submitting too
+
+The name, email and payout account stay out of this repo: the hackathon's brief says the payload holds personal data.
 ~~~
