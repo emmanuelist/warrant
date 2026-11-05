@@ -37,7 +37,7 @@ internal/            dossier, raw captures, spikes: gitignored, never commit
 6. **No secrets in the repo.** Keys stay in `~/.near-credentials/`. `.env.example` lists names only. Never print a private key or seed phrase.
 7. **No silent scope cuts.** Every cut is a DECISIONS entry with its technical reason.
 8. **Mainnet spend (D-004):** mainnet only for the Intents path, with demo trades ≤ $2 each. Ask the user before any single spend above $5 or anything touching their personal wallet. Claude's own dedicated account signs the demo, so no step needs theirs (D-036).
-9. **Outward-facing actions belong to the user.** Claude drafts the X post (it must tag `@NEARProtocol` and `#NEARHackathon`) and the submission payload. The user publishes the post and confirms the exact payload before `POST /api/applications`. A mistake in a saved submission goes through https://nearhackathon.com/request-changes, never a second submission.
+9. **Outward-facing actions belong to the user.** Claude drafts the X post (it must say it was built at NEAR HACKATHON, tag `@NEARProtocol` and `#NEARHackathon`, and carry the video) and the submission payload. The user publishes the post and confirms the exact payload before `POST /api/applications`. A mistake in a saved submission goes through https://nearhackathon.com/request-changes, never a second submission.
 10. **Build window (D-034):** the organizers count code from the announcement on 2026-10-19 (Q-001), and this project starts 2026-10-20. Say so plainly; never claim or imply the code post-dates 2026-11-01. Spike code stays in `internal/spikes/`.
 
 ## Verification before any gate
@@ -66,7 +66,7 @@ Local UI against real chain state: `cargo test --test devnet -- --ignored --noca
 ## Where things live
 | Concern | File |
 |---|---|
-| Milestones and exit criteria | docs/PLAN.md (GitHub milestones mirror it once the remote exists) |
+| Milestones and exit criteria | docs/PLAN.md (GitHub milestones mirror it) |
 | Work items | GitHub issues (`gh issue list --repo emmanuelist/warrant --milestone "<current>"`) |
 | Why we chose what we chose | docs/DECISIONS.md (append-only) |
 | Proof that things work | docs/EVIDENCE.md (append-only) |

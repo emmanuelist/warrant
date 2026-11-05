@@ -6,10 +6,11 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/contract-78%20unit%20%C2%B7%204%20on%20real%20Intents%20bytecode-2b5bd7)](#tests)
 [![NEAR mainnet](https://img.shields.io/badge/NEAR%20mainnet-warrant--options.near-1f1f23)](https://nearblocks.io/address/warrant-options.near)
+[![Source verified, contract locked](https://img.shields.io/badge/NearBlocks-source%20verified%20%C2%B7%20contract%20locked-1f7a4d)](https://nearblocks.io/address/warrant-options.near/contract/code)
 
 **Options that can't default and need no oracle: the collateral is locked inside NEAR Intents until expiry.**
 
-**[Live app](https://warrant-options.vercel.app)** · **[The contract](https://nearblocks.io/address/warrant-options.near)** · **[Check it yourself](#try-it)** · **[Proof](#proof-nothing-here-is-a-mockup)** · **[Limits](#limits)**
+**[Live app](https://warrant-options.vercel.app)** · **[The contract](https://nearblocks.io/address/warrant-options.near/contract/code)** · **[Check it yourself](#try-it)** · **[Proof](#proof-nothing-here-is-a-mockup)** · **[Limits](#limits)**
 
 Built for NEAR HACKATHON, tracks `defi` and `open`.
 
@@ -44,7 +45,9 @@ git clone https://github.com/emmanuelist/warrant && cd warrant
 node scripts/verify.mjs
 ```
 
-You see `PASS` lines for the deployed code, the source link, the contract's empty key list, the backing inside Intents, the refusal room, the wallet-signed purchase, the relayer's key, the round trip on both chains, and the hosted page and relayer, then `Every claim above holds on chain.` It takes under a minute.
+You see `PASS` lines for the deployed code, the source link, an outside rebuild, the contract's empty key list, the backing inside Intents, the refusal room, the wallet-signed purchase, the relayer's key, the round trip on both chains, and the hosted page and relayer, then `Every claim above holds on chain.` It takes under a minute.
+
+Without a terminal, [the contract on NearBlocks](https://nearblocks.io/address/warrant-options.near/contract/code) says "Contract Source Code Verified", from a rebuild SourceScan ran on its own, and lists the source files. Its Overview tab says "Contract Locked: Yes".
 
 **4. Send a refusal yourself.** You need a NEAR wallet with about 0.1 NEAR free. On the board, open a series and pull a lever marked locked, or choose "Send one yourself" under Refusals.
 Your wallet shows the call. You see "Refused by chain" and the contract's own error, such as `ERR_NOT_WRITER`, with your transaction hash. It costs a fraction of a cent in gas, and nothing else moves.
@@ -88,6 +91,7 @@ No demo mode, no seeded database, no fixtures. Every figure in the app is a cont
 | Claim | Check it | Evidence |
 |---|---|---|
 | The contract is live and its code is this repo's | [`warrant-options.near`](https://nearblocks.io/address/warrant-options.near), `code_hash DADQfyxq…svgYz`, built reproducibly at tag `mainnet-v0.1.0`; the source link is on chain (NEP-330) | E-031 |
+| Someone else rebuilt it and got the same hash | SourceScan built this repo at the commit named on chain. [NearBlocks shows "Contract Source Code Verified"](https://nearblocks.io/address/warrant-options.near/contract/code), and the record is on chain: `get_contract` on `v2-verifier.sourcescan.near` (`verify.mjs` reads it) | E-037 |
 | Nobody holds the contract's keys, so nobody can deploy new code | `near account list-keys warrant-options.near network-config mainnet now` prints an empty table. [The last key's deletion](https://nearblocks.io/txns/A1mX5E2cJSUkjWMhiQoZ1bn5fJCekprQBHJgBb11qi5j) | E-035 |
 | Collateral sits inside Intents, under the contract's own account | `mt_balance_of` on `intents.near` for `warrant-options.near`, compared with what every series owes (`verify.mjs`, or the "Backed 1:1" line in the app) | E-031 |
 | Every refusal the contract names fires on mainnet | 28 real attempts reach all 26 named refusals, refused attempts move no money, and 3 honest calls go through. Hashes are in [`web/.env.production`](web/.env.production), e.g. the writer reclaiming early: [`8vPwm6Qr…`](https://nearblocks.io/txns/8vPwm6QrKDHkM2EtSYA5gT64qzuB4nTayz5zePbGt5Xt) `ERR_NOT_EXPIRED` | E-031 |
