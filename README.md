@@ -51,6 +51,8 @@ Open `http://localhost:5173/?as=alice.sandbox` and you see the Lock Dial and a b
 
 **3. Try to break the lock.** Choose "Refusals" in the header, press "Send one yourself", then "Test the lock". The transaction is really sent and the contract refuses it. You see "Refused by chain", `ERR_NOT_EXPIRED` and the transaction hash.
 
+**4. Fill the refusal room.** `node scripts/run.mjs --devnet write && node scripts/run.mjs --devnet room` sends every attempt for real, 27 refused by name and 3 honest calls, and stops unless each one ends as it must. Reload the page and "Every way in, refused" reads them all back from chain.
+
 ## How it works
 
 | Part | Where | What it does |

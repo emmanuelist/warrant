@@ -205,6 +205,7 @@ The pass sampled the finance, Web3 and crypto picks on Recent (Godly's successor
 
 A dual-agent critique scored the app 27/40 (audit 15/20). The fixes, with the user's choices (D-027):
 - **No refusal anyone didn't ask for.** Sheets bound counts by holdings, the offer and the Intents balance (shown, with Max), tie each error to its field, and send your own offers to Cancel. Write bounds expiry to the contract's window. "Test the lock" stays the only deliberate refusal.
+- **The refusal room is the band's second half (D-037).** Attempts are grouped by what they try, a lamp per row: a ring until the chain has answered, then red with the contract's own `ERR_*`, or green for an honest call that had to go through. A row that ends any other way says so in amber. The two counters count only what was read back from chain, so they start at zero every time.
 - **The refusals band is proof, not theatre.** Each card is a real refused transaction, read back from chain by hash: the contract's error from its receipt, Intents' refund from its log, the sender and the time. "Send one yourself" pulls a bolted lever for real; "Replay" is only the kick.
 - **Way-finding.** Board goes to the board; a shared series link scrolls to it (and lazy sections keep a link's target in view as they load); "Every series ↓" sits under the hero.
 - **Labels say what's true:** "closed at expiry", "claimable", a dismiss icon that can't be read as the Close lever, "Options to exercise", plurals, and backing chips that add up to the dial ("= 6,261.00 locked + 2.00 released").

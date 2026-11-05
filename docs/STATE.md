@@ -5,8 +5,8 @@ _Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) ·
 **Milestone:** M1, due 2026-11-05 23:59 UTC · **Deadline:** 2026-11-14 23:59 UTC · 9 days left on 2026-11-05
 **Next action:** the first mainnet deploy (#10) as soon as #1 is funded, in this order:
 1. `cargo near build reproducible-wasm` in `contracts/options`, from a clean commit that will be pushed and tagged, not squashed (its SHA is what NEP-330 names).
-2. `scripts/mainnet-deploy.sh contract`, then `holder` and `relayer`. Then `node scripts/run.mjs` with `allow`, `fund 0.85`, `swap 0.3`, `share 0.5`, `write`, `refusals`.
-3. Add the printed `VITE_REFUSAL_TXS` to `web/.env.production`, then host the page and relayer (`scripts/mainnet-deploy.sh host`) and send one real transaction from the page.
+2. `scripts/mainnet-deploy.sh contract`, then `holder` and `relayer`. Then `node scripts/run.mjs` with `allow`, `fund 0.85`, `swap 0.3`, `share 0.5`, `write`, `room`, which writes `VITE_REFUSAL_TXS` to `web/.env.production`.
+3. Commit that file, then host the page and relayer (`scripts/mainnet-deploy.sh host`) and send one real transaction from the page.
 4. The first real 1Click payout to Base (#11).
 
 Claude provides the wallet and records the video. The user only funds, posts on X and confirms the payload (D-036). The demo winds down from 2026-11-26 (#25). What the proof has to beat: D-037 (#11, #18, #20, #21, #22).
@@ -21,6 +21,7 @@ The web app and relayer go on Vercel (the user agreed, 2026-11-05). Deploy from 
 | Capability | Verified by | Evidence |
 |---|---|---|
 | The history split by area, each commit checked, a fresh clone green; two reproducible Docker builds byte-identical (2026-11-05) | Gate per commit, `cargo near build reproducible-wasm` | E-025, E-026 |
+| Refusal room on the devnet (D-037, 2026-11-05): 27 real attempts reach all 25 named refusals, 3 honest calls go through, refused attempts move no money, and the app reads all 30 back from chain. **Not yet sent on mainnet** | `scripts/run.mjs room`, Playwright, axe-core, impeccable detect | E-027 |
 | The deploy rehearsed, nothing spent (2026-11-05): a fresh clone passes the CI steps; every `scripts/run.mjs` step runs on the devnet with real refusals refunded in full; a NEP-413 signature over a live 1Click intent passes mainnet `simulate_intents`; the relayer as `vercel build` emits it passes the relay check on the devnet; the README's steps work in a browser | `scripts/run.mjs`, `swap-check`, `web/scripts/relay-check.mjs`, Playwright | E-024 |
 | Rules re-read: Q-001 counts code from 2026-10-19 (D-034). Live `intents.near` and `wrap.near` still match the pinned hashes, and Intents reports nothing paused (2026-11-05) | curl, RPC | E-023 |
 | Options contract: fmt + clippy `-D warnings`, 71 unit tests, sandbox suites `sandbox` + `signers`; 323.0 KB wasm with `on_auth` (2026-11-05) | Gate | E-004, E-013, E-017, E-023 |

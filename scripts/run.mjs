@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * The real transactions behind the mainnet board (#10, D-027): the allowlist, balances inside
- * Intents, a series with an offer, and the three refusals the board reads back by hash. `--devnet`
+ * The real transactions behind the mainnet board (#10, #20, D-037): the allowlist, balances inside
+ * Intents, a series with an offer, and the refusal room the board reads back by hash. `--devnet`
  * points the same steps at the local sandbox, which is how they are rehearsed before they cost
  * anything. Keys are read from ~/.near-credentials and never printed.
  *
@@ -12,9 +12,10 @@
  *   node scripts/run.mjs swap-check                   mainnet: signs a real 1Click intent and only simulates it (free)
  *   node scripts/run.mjs [--devnet] share <usdc>      writer: move USDC to the holder inside Intents
  *   node scripts/run.mjs [--devnet] write             writer: the long-dated series and its offer
- *   node scripts/run.mjs [--devnet] refusals          three real refusals; prints VITE_REFUSAL_TXS
+ *   node scripts/run.mjs [--devnet] room              every attempt in web/src/lib/room.json, sent for
+ *                                                     real; writes VITE_REFUSAL_TXS to the web env file
  */
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -274,50 +275,120 @@ const steps = {
     console.log(`series ${series.series_id}: ${series.long_supply} longs, ${series.collateral_held} locked, token ${series.token_id}`);
   },
 
-  async refusals() {
+  /**
+   * The refusal room (#20, D-037). Every attempt goes to chain for real, and the run stops unless
+   * each one ends exactly as web/src/lib/room.json says. Refused attempts must be refunded in full
+   * and leave the contract's collateral where it was.
+   */
+  async room() {
     if (!net.holder) throw new Error("no holder key file yet");
-    const longDated = await latestSeries(net.writer);
-    if (!longDated) throw new Error("run `write` first");
-    const before = { writer: await balanceIn(net.writer, net.usdc), holder: await balanceIn(net.holder, net.usdc) };
-    if (before.writer < STRIKE || before.holder < STRIKE) throw new Error(`both need ${STRIKE} USDC inside Intents: ${JSON.stringify(before, (_, v) => v.toString())}`);
+    const W = net.writer;
+    const H = net.holder;
+    const catalog = JSON.parse(readFileSync(new URL("../web/src/lib/room.json", import.meta.url), "utf8"));
+    const expected = new Map(catalog.map((entry) => [entry.id, entry.expect]));
+    const sent = new Map();
+
+    const attempt = async (id, signer, receiver, method, callArgs, deposit = YOCTO, gas = MAX_GAS) => {
+      if (!expected.has(id)) throw new Error(`${id} isn't in room.json`);
+      const want = expected.get(id);
+      const outcome = await send(signer, receiver, method, callArgs, deposit, gas);
+      const failed = failures(outcome);
+      if (want ? !JSON.stringify(failed).includes(want) : failed.length) throw new Error(`${id}: expected ${want ?? "success"}, got ${JSON.stringify(failed).slice(0, 400)}`);
+      console.log(`${id.padEnd(22)} ${(want ?? "went through").padEnd(30)} ${outcome.transaction.hash}`);
+      sent.set(id, `${id}:${signer}:${outcome.transaction.hash}`);
+    };
 
     const now = await chainNowNs();
-    await ok("write a short-dated call", ...viaIntents(net.writer, wnear, PER_OPTION, createMsg(PER_OPTION, STRIKE, now + 75n * SECOND_NS)));
-    const shortDated = await latestSeries(net.writer);
+    const allSeries = [];
+    for (let from = 0; ; from += 100) {
+      const page = await view(net.options, "get_series_list", { from_index: String(from), limit: "100" });
+      allSeries.push(...page);
+      if (page.length < 100) break;
+    }
+    const long = allSeries
+      .filter((s) => s.writer === W && s.underlying_per_option === PER_OPTION.toString() && s.strike_per_option === STRIKE.toString() && BigInt(s.expiry_ns) > now + 3_600n * SECOND_NS)
+      .at(-1);
+    if (!long) throw new Error("run `write` first");
+    const offers = () => view(net.options, "get_offers", { from_index: "0", limit: "100" });
+    const offer = (await offers()).find((o) => o.series_id === long.series_id && o.seller === W && BigInt(o.remaining) >= 2n);
+    if (!offer) throw new Error(`series ${long.series_id} has no offer of 2`);
+    const premium = BigInt(offer.price_per_option);
+    const dust = (NEAR_ONE * 1n) / 1000n;
+
+    const holderUsdc = await balanceIn(H, net.usdc);
+    if ((await balanceIn(W, net.usdc)) < STRIKE + 5n || holderUsdc < STRIKE + premium + 5n) throw new Error(`the writer needs ${STRIKE + 5n} and the holder ${STRIKE + premium + 5n} USDC inside Intents`);
+    if ((await balanceIn(W, wnear)) < 2n * PER_OPTION + 5n * dust) throw new Error(`the writer needs ${2n * PER_OPTION + 5n * dust} wNEAR inside Intents`);
+
+    // A short-dated series for what only happens at expiry, and an offer priced to overflow.
+    await ok("write a short-dated call", ...viaIntents(W, wnear, 2n * PER_OPTION, createMsg(PER_OPTION, STRIKE, now + 90n * SECOND_NS)));
+    const short = (await view(net.options, "get_series_list", { from_index: String(allSeries.length), limit: "1" }))[0];
+    await ok("offer it at an overflowing price", W, net.options, "list", { series_id: short.series_id, amount: "2", price_per_option: (2n ** 127n).toString() });
+    const overflowing = (await offers()).find((o) => o.series_id === short.series_id);
+    await attempt("buy-overflow", ...viaIntents(H, net.usdc, 1n, { action: "buy", offer_id: overflowing.offer_id, amount: "2" }));
+    await ok("cancel that offer", W, net.options, "cancel_offer", { offer_id: overflowing.offer_id });
+
+    const held = async () =>
+      JSON.stringify(await Promise.all([W, H, net.options].flatMap((account) => [wnear, net.usdc].map(async (token) => (await balanceIn(account, token)).toString()))));
+    const before = await held();
+    const createWith = (overrides) => ({ ...createMsg(PER_OPTION, STRIKE, DEMO_EXPIRY_NS), ...overrides });
+    const exerciseLong = (amount) => ({ action: "exercise", series_id: long.series_id, amount });
+
+    await attempt("reclaim-early", W, net.options, "reclaim_collateral", { series_id: long.series_id });
+    await attempt("reclaim-stranger", H, net.options, "reclaim_collateral", { series_id: long.series_id });
+    await attempt("close-unheld", W, net.options, "close", { series_id: long.series_id, amount: "2" });
+
+    // Not payable, so no deposit: the contract's own check is what refuses it.
+    await attempt("forge-deposit", H, net.options, "mt_on_transfer", { sender_id: H, previous_owner_ids: [H], token_ids: [wnear], amounts: [NEAR_ONE.toString()], msg: JSON.stringify(createMsg(PER_OPTION, STRIKE, DEMO_EXPIRY_NS)) }, 0n);
+    await attempt("forge-signature", H, net.options, "on_auth", { signer_id: W, msg: JSON.stringify({ action: "reclaim_collateral", series_id: long.series_id }) });
+    await attempt("allow-stranger", H, net.options, "allow_token", { token_id: wnear, min_amount: "1" });
+    await attempt("cancel-stranger", H, net.options, "cancel_offer", { offer_id: offer.offer_id });
+
+    await attempt("exercise-unheld", ...viaIntents(H, net.usdc, STRIKE, exerciseLong("1")));
+    await attempt("exercise-underpaid", ...viaIntents(W, net.usdc, STRIKE - 1n, exerciseLong("1")));
+    await attempt("exercise-wrong-token", ...viaIntents(W, wnear, dust, exerciseLong("1")));
+    await attempt("exercise-unknown", ...viaIntents(H, net.usdc, 1n, { action: "exercise", series_id: "999999", amount: "1" }));
+    await attempt("exercise-zero", ...viaIntents(W, net.usdc, 1n, exerciseLong("0")));
+
+    await attempt("buy-too-many", ...viaIntents(H, net.usdc, 1n, { action: "buy", offer_id: offer.offer_id, amount: "3" }));
+    await attempt("buy-unknown", ...viaIntents(H, net.usdc, 1n, { action: "buy", offer_id: "999999", amount: "1" }));
+
+    await attempt("create-below-min", ...viaIntents(W, wnear, 1_000n, createWith({})));
+    await attempt("create-bad-expiry", ...viaIntents(W, wnear, dust, createWith({ expiry_ns: "1" })));
+    await attempt("create-unlisted", ...viaIntents(W, wnear, dust, createWith({ quote: "nep141:nobody-allowed-this.near" })));
+    await attempt("create-same", ...viaIntents(W, wnear, dust, createWith({ quote: wnear })));
+    await attempt("bad-msg", ...viaIntents(W, wnear, dust, "please"));
+    await attempt("batch", W, net.intents, "mt_batch_transfer_call", { receiver_id: net.options, token_ids: [wnear, net.usdc], amounts: [dust.toString(), "1"], approvals: null, memo: null, msg: JSON.stringify(createWith({})) });
+
+    await attempt("transfer-self", W, net.options, "mt_transfer", { receiver_id: W, token_id: long.token_id, amount: "1", approval: null, memo: null });
+    await attempt("transfer-approval", W, net.options, "mt_transfer", { receiver_id: H, token_id: long.token_id, amount: "1", approval: [H, 0], memo: null });
+    await attempt("batch-mismatch", W, net.options, "mt_batch_transfer", { receiver_id: H, token_ids: [long.token_id], amounts: ["1", "1"], approvals: null, memo: null });
+    await attempt("retry-nothing", H, net.options, "retry_payout", { token_id: net.usdc });
+
+    if ((await held()) !== before) throw new Error("a refused attempt moved money");
+    console.log("every refused attempt so far refunded in full, the contract's balances unchanged");
+
+    await attempt("honest-buy", ...viaIntents(H, net.usdc, premium, { action: "buy", offer_id: offer.offer_id, amount: "1" }));
+    await attempt("honest-exercise", ...viaIntents(H, net.usdc, STRIKE, exerciseLong("1")));
+
     for (;;) {
-      const series = await view(net.options, "get_series", { series_id: shortDated.series_id });
+      const series = await view(net.options, "get_series", { series_id: short.series_id });
       if (series.expired) break;
-      console.log(`series ${shortDated.series_id}: waiting for expiry`);
+      console.log(`series ${short.series_id}: waiting for expiry`);
       await new Promise((resolve) => setTimeout(resolve, 10_000));
     }
+    await attempt("exercise-expired", ...viaIntents(W, net.usdc, STRIKE, { action: "exercise", series_id: short.series_id, amount: "1" }));
+    await attempt("honest-reclaim", W, net.options, "reclaim_collateral", { series_id: short.series_id });
+    await attempt("reclaim-twice", W, net.options, "reclaim_collateral", { series_id: short.series_id });
 
-    const refused = async (id, signer, expected, outcome) => {
-      const text = JSON.stringify(failures(outcome));
-      if (!text.includes(expected)) throw new Error(`${id}: expected ${expected}, got ${text}`);
-      console.log(`${id}: ${expected} ${outcome.transaction.hash}`);
-      return `${id}:${signer}:${outcome.transaction.hash}`;
-    };
-    const entries = [
-      await refused("reclaim-early", net.writer, "ERR_NOT_EXPIRED", await send(net.writer, net.options, "reclaim_collateral", { series_id: longDated.series_id })),
-      await refused(
-        "exercise-expired",
-        net.writer,
-        "ERR_EXPIRED",
-        await send(...viaIntents(net.writer, net.usdc, STRIKE, { action: "exercise", series_id: shortDated.series_id, amount: "1" })),
-      ),
-      await refused(
-        "exercise-unheld",
-        net.holder,
-        "ERR_INSUFFICIENT_LONGS",
-        await send(...viaIntents(net.holder, net.usdc, STRIKE, { action: "exercise", series_id: longDated.series_id, amount: "1" })),
-      ),
-    ];
+    const missing = catalog.filter((entry) => !sent.has(entry.id)).map((entry) => entry.id);
+    if (missing.length) throw new Error(`room.json lists attempts nobody sent: ${missing.join(", ")}`);
 
-    const after = { writer: await balanceIn(net.writer, net.usdc), holder: await balanceIn(net.holder, net.usdc) };
-    if (after.writer !== before.writer || after.holder !== before.holder) throw new Error("a refused exercise was not refunded in full");
-    console.log("both refused exercises refunded in full");
-    await ok(`reclaim series ${shortDated.series_id}`, net.writer, net.options, "reclaim_collateral", { series_id: shortDated.series_id });
-    console.log(`VITE_REFUSAL_TXS=${entries.join(",")}`);
+    // Only pointers: the board reads every one back from chain (web/src/lib/refusals.ts).
+    const envFile = new URL(devnet ? "../web/.env.development.local" : "../web/.env.production", import.meta.url);
+    const kept = readFileSync(envFile, "utf8").split("\n").filter((line) => line && !line.startsWith("VITE_REFUSAL_TXS="));
+    const line = `VITE_REFUSAL_TXS=${catalog.map((entry) => sent.get(entry.id)).join(",")}`;
+    writeFileSync(envFile, `${kept.join("\n")}\n${line}\n`);
+    console.log(`${catalog.length} attempts ended as room.json says; wrote VITE_REFUSAL_TXS to ${envFile.pathname.split("/").at(-1)}`);
   },
 };
 

@@ -1771,6 +1771,74 @@ li {
     overflow-wrap: anywhere;
   }
 
+  /* ---------- The refusal room (RefusalRoom.tsx) ---------- */
+
+  .room-families {
+    columns: 1;
+    column-gap: 3.5rem;
+  }
+
+  @media (min-width: 48rem) {
+    .room-families {
+      columns: 2;
+    }
+  }
+
+  @media (min-width: 80rem) {
+    .room-families {
+      columns: 3;
+    }
+  }
+
+  .room-family {
+    break-inside: avoid;
+    padding-bottom: 2.25rem;
+  }
+
+  .room-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.55rem 0;
+    border-top: 1px solid color-mix(in oklch, var(--color-panel-line) 55%, transparent);
+  }
+
+  /* The row's state, as a lamp: a ring until the chain has answered, then the answer's ink. */
+  .room-lamp {
+    --lamp: transparent;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-top: 0.45rem;
+    border-radius: 999px;
+    background: var(--lamp);
+    box-shadow: inset 0 0 0 1.5px var(--color-panel-ink-3);
+    transition: background-color 180ms ease, box-shadow 180ms ease;
+  }
+
+  .room-row[data-state="reading"] .room-lamp {
+    box-shadow: inset 0 0 0 1.5px var(--color-panel-ink);
+  }
+
+  .room-row[data-state="refused"] .room-lamp {
+    --lamp: var(--color-refuse-lit);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-refuse-lit) 22%, transparent);
+  }
+
+  .room-row[data-state="through"] .room-lamp {
+    --lamp: var(--color-live-lit);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-live-lit) 22%, transparent);
+  }
+
+  .room-row[data-state="off"] .room-lamp {
+    --lamp: var(--color-release-lit);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .room-lamp {
+      transition: none;
+    }
+  }
+
   /* ---------- The trade card's primary move (Detail.tsx) ---------- */
 
   /* One key ahead of the Interlock, in its lever's enamel (with `.enamel`), carrying the lever's

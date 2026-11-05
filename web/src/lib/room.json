@@ -1,0 +1,38 @@
+[
+  { "id": "reclaim-early", "family": "The lock", "title": "The writer takes the collateral back before expiry", "expect": "ERR_NOT_EXPIRED" },
+  { "id": "reclaim-stranger", "family": "The lock", "title": "A stranger takes the collateral", "expect": "ERR_NOT_WRITER" },
+  { "id": "close-unheld", "family": "The lock", "title": "The writer closes options they no longer hold", "expect": "ERR_INSUFFICIENT_LONGS" },
+  { "id": "reclaim-twice", "family": "The lock", "title": "The writer reclaims the same series twice", "expect": "ERR_ALREADY_RECLAIMED" },
+
+  { "id": "forge-deposit", "family": "Someone else's name", "title": "A fake deposit, called as if Intents had sent it", "expect": "ERR_NOT_INTENTS" },
+  { "id": "forge-signature", "family": "Someone else's name", "title": "Acting for the writer, without Intents checking a signature", "expect": "ERR_NOT_INTENTS" },
+  { "id": "allow-stranger", "family": "Someone else's name", "title": "A stranger edits the token allowlist", "expect": "ERR_NOT_OWNER" },
+  { "id": "cancel-stranger", "family": "Someone else's name", "title": "A stranger cancels someone's offer", "expect": "ERR_NOT_SELLER" },
+
+  { "id": "exercise-expired", "family": "The right", "title": "Exercise after expiry", "expect": "ERR_EXPIRED" },
+  { "id": "exercise-unheld", "family": "The right", "title": "Exercise without the option", "expect": "ERR_INSUFFICIENT_LONGS" },
+  { "id": "exercise-underpaid", "family": "The right", "title": "Pay one unit less than the strike", "expect": "ERR_INSUFFICIENT_PAYMENT" },
+  { "id": "exercise-wrong-token", "family": "The right", "title": "Pay the strike in the wrong token", "expect": "ERR_WRONG_TOKEN" },
+  { "id": "exercise-unknown", "family": "The right", "title": "Exercise a series that doesn't exist", "expect": "ERR_UNKNOWN_SERIES" },
+  { "id": "exercise-zero", "family": "The right", "title": "Exercise zero options", "expect": "ERR_ZERO" },
+
+  { "id": "buy-too-many", "family": "The market", "title": "Buy more than the offer holds", "expect": "ERR_OFFER_AMOUNT" },
+  { "id": "buy-unknown", "family": "The market", "title": "Buy from an offer that doesn't exist", "expect": "ERR_UNKNOWN_OFFER" },
+  { "id": "buy-overflow", "family": "The market", "title": "A price built to overflow the arithmetic", "expect": "ERR_OVERFLOW" },
+
+  { "id": "create-below-min", "family": "Writing a series", "title": "A dust series, to fill the contract's storage", "expect": "ERR_BELOW_MIN" },
+  { "id": "create-bad-expiry", "family": "Writing a series", "title": "A series that has already expired", "expect": "ERR_BAD_EXPIRY" },
+  { "id": "create-unlisted", "family": "Writing a series", "title": "A token nobody allowed", "expect": "ERR_TOKEN_NOT_ALLOWED" },
+  { "id": "create-same", "family": "Writing a series", "title": "The same token on both sides", "expect": "ERR_SAME_TOKEN" },
+  { "id": "bad-msg", "family": "Writing a series", "title": "Funds sent with a message that means nothing", "expect": "ERR_BAD_MSG" },
+  { "id": "batch", "family": "Writing a series", "title": "Two tokens in one transfer", "expect": "ERR_BATCH_NOT_SUPPORTED" },
+
+  { "id": "transfer-self", "family": "The position token", "title": "Move a position to yourself", "expect": "ERR_SELF_TRANSFER" },
+  { "id": "transfer-approval", "family": "The position token", "title": "Spend a position through an approval", "expect": "ERR_APPROVALS_NOT_SUPPORTED" },
+  { "id": "batch-mismatch", "family": "The position token", "title": "A batch whose tokens and amounts don't line up", "expect": "ERR_LENGTH_MISMATCH" },
+  { "id": "retry-nothing", "family": "The position token", "title": "Claim a payout nobody owes", "expect": "ERR_NOTHING_TO_PAY" },
+
+  { "id": "honest-buy", "family": "Honest calls", "title": "Buy at the offer's price", "expect": null },
+  { "id": "honest-exercise", "family": "Honest calls", "title": "Exercise at the strike", "expect": null },
+  { "id": "honest-reclaim", "family": "Honest calls", "title": "Reclaim after expiry", "expect": null }
+]
