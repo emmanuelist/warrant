@@ -10,7 +10,7 @@
 
 **Options that can't default and need no oracle: the collateral is locked inside NEAR Intents until expiry.**
 
-**[Live app](https://warrant-options.vercel.app)** · **[The contract](https://nearblocks.io/address/warrant-options.near/contract/code)** · **[Check it yourself](#try-it)** · **[Proof](#proof-nothing-here-is-a-mockup)** · **[Limits](#limits)**
+**[Live app](https://warrant-options.vercel.app)** · **[The film](https://x.com/emmanuelcesc/status/2118396029271974299)** · **[The contract](https://nearblocks.io/address/warrant-options.near/contract/code)** · **[Check it yourself](#try-it)** · **[Proof](#proof-nothing-here-is-a-mockup)** · **[Limits](#limits)**
 
 Built for NEAR HACKATHON, tracks `defi` and `open`.
 
@@ -95,6 +95,7 @@ No demo mode, no seeded database, no fixtures. Every figure in the app is a cont
 | Nobody holds the contract's keys, so nobody can deploy new code | `near account list-keys warrant-options.near network-config mainnet now` prints an empty table. [The last key's deletion](https://nearblocks.io/txns/A1mX5E2cJSUkjWMhiQoZ1bn5fJCekprQBHJgBb11qi5j) | E-035 |
 | Collateral sits inside Intents, under the contract's own account | `mt_balance_of` on `intents.near` for `warrant-options.near`, compared with what every series owes (`verify.mjs`, or the "Backed 1:1" line in the app) | E-031 |
 | Every refusal the contract names fires on mainnet | 28 real attempts reach all 26 named refusals, refused attempts move no money, and 3 honest calls go through. Hashes are in [`web/.env.production`](web/.env.production), e.g. the writer reclaiming early: [`8vPwm6Qr…`](https://nearblocks.io/txns/8vPwm6QrKDHkM2EtSYA5gT64qzuB4nTayz5zePbGt5Xt) `ERR_NOT_EXPIRED` | E-031 |
+| The whole story ran on mainnet, on film | [The film](https://x.com/emmanuelcesc/status/2118396029271974299), 2:19: one continuous take on one series, with the chain's clock opening the lock on camera. Its keys chapter is the real output from after the lock | E-034, E-035 |
 | A full cycle ran: write, buy, exercise, expire, reclaim | [Write](https://nearblocks.io/txns/2L53cjfgp4yB2Ptf4FqDHxqbT4ZKJTY4G1RgUkPrdE4F) · [buy](https://nearblocks.io/txns/Fy1eGLFp1a3zXnmzEZLb2mMH1hrPCVtep2F5TbDZsXZ2) · [exercise](https://nearblocks.io/txns/AGhabFx252CkRkNF4z5di7k3pWsLDmHTTQ2ZxG4SPurD) · [reclaim after expiry](https://nearblocks.io/txns/61BMogv9VnjWZYhs4Bsn4yJV8Dbyh3ViYSYkUtuA1yBJ) · [reclaim refused the second time](https://nearblocks.io/txns/FwHdsPWaFsyL3tUvquzrvTU2H4BVV1LrRvygCd2xAWxW) | E-031 |
 | A real wallet signs from the hosted page | Intear Wallet through near-connect, approving a purchase: [`CvMRoftt…`](https://nearblocks.io/txns/CvMRoftt8jhibE7pchQvZ3JBb9bXnDXUNAkwzonseGPU) | E-031 |
 | A position moves between accounts as an Intents asset | [Into Intents](https://nearblocks.io/txns/2nk3oMrDNLYcdQ2WAfRtN6YCeYQV4G3SCYnJ287evCxD) · [to a `0x` account inside Intents](https://nearblocks.io/txns/2zXKYV6nrKdtjVhg2zid8oEzXcNZRuyqym1QaEZzP1eP) · [back to Warrant's ledger through the relayer](https://nearblocks.io/txns/GZ58bApzGnChGTD1hP7d8mmzsct2PZwAZjPEt89MnWVB) | E-033 |
