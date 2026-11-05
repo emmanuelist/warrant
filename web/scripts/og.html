@@ -1,0 +1,146 @@
+<!doctype html>
+<!--
+  Source of public/og.png, the 1200×630 link preview, built from the app's own tokens and the Lock
+  Dial's face (DialFace: the material without chain figures, since a static image can't stay true
+  to a live board). Render: with the dev server running, open /scripts/og.html at a 1200×630
+  viewport, wait for the dial to set, and screenshot it to public/og.png.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Warrant link preview</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script type="module">
+      import "@fontsource-variable/mona-sans/standard.css";
+      import "@fontsource-variable/atkinson-hyperlegible-mono/index.css";
+      import "/src/styles.css";
+      import { createElement as h } from "react";
+      import { createRoot } from "react-dom/client";
+      import { DialFace } from "/src/components/Dial.tsx";
+
+      createRoot(document.getElementById("dial")).render(
+        h(
+          DialFace,
+          { arcDeg: 150, sweepDelay: null },
+          h(
+            "div",
+            { className: "dial-center" },
+            h("p", { className: "plate-label dial-kicker" }, "NEAR Intents"),
+            h("p", { className: "og-locked" }, "Locked"),
+            h("p", { className: "dial-unit" }, "until expiry"),
+          ),
+        ),
+      );
+    </script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+      }
+      main {
+        position: relative;
+        z-index: 1;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        width: 1200px;
+        height: 630px;
+        padding: 58px 72px 60px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--color-iron);
+      }
+      .brand svg {
+        width: 28px;
+        height: 34px;
+      }
+      .brand .word {
+        font-family: var(--font-display);
+        font-variation-settings: "wdth" 125, "wght" 680;
+        letter-spacing: 0.16em;
+        font-size: 24px;
+        line-height: 1;
+      }
+      h1 {
+        margin: 0;
+        max-width: 640px;
+      }
+      h1 .display {
+        display: block;
+        font-size: 64px;
+      }
+      h1 .lede {
+        display: block;
+        max-width: 560px;
+        margin-top: 22px;
+        font-size: 27px;
+        line-height: 1.35;
+        color: var(--color-iron-2);
+        font-variation-settings: "wdth" 100, "wght" 460;
+      }
+      h1 .lede em {
+        font-style: normal;
+        color: var(--color-lock);
+        font-variation-settings: "wdth" 100, "wght" 600;
+      }
+      .note {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 15px;
+        color: var(--color-iron-2);
+      }
+      .note .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--color-lock);
+      }
+      #dial {
+        position: absolute;
+        top: 50%;
+        right: -70px;
+        width: 540px;
+        translate: 0 -50%;
+      }
+      .og-locked {
+        margin: 0;
+        font-family: var(--font-display);
+        font-variation-settings: "wdth" 112, "wght" 640;
+        font-size: 13cqi;
+        letter-spacing: -0.035em;
+        line-height: 1;
+        color: var(--centre-ink);
+      }
+    </style>
+  </head>
+  <body class="stage">
+    <main>
+      <div class="brand">
+        <svg viewBox="0 0 24 28" aria-hidden="true">
+          <rect x="9" y="3" width="6" height="16" rx="3" fill="oklch(0.9 0.006 255)" />
+          <g transform="rotate(-18 12 18)">
+            <rect x="10.75" y="4" width="2.5" height="15" rx="1.25" fill="currentColor" />
+            <circle cx="12" cy="4.5" r="3.4" fill="currentColor" />
+          </g>
+          <rect x="3" y="19.5" width="18" height="7.5" rx="1" fill="var(--color-lock)" />
+        </svg>
+        <span class="word">WARRANT</span>
+      </div>
+      <h1>
+        <span class="display">Options that can't default and need no oracle:</span>
+        <span class="lede">the collateral is <em>locked inside NEAR Intents</em> until expiry.</span>
+      </h1>
+      <p class="note"><span class="dot"></span>Physically settled options on NEAR Intents</p>
+    </main>
+    <div id="dial"></div>
+  </body>
+</html>
