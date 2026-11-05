@@ -119,6 +119,27 @@ async function walletFor(account: string): Promise<EvmWallet | null> {
   return null;
 }
 
+/** The chains a connected wallet can pay a deposit from: 1Click's code for each, and its chain id. */
+export const EVM_CHAIN_IDS: Record<string, number> = { eth: 1, base: 8453, arb: 42161, op: 10, pol: 137, bsc: 56, avax: 43114, gnosis: 100, scroll: 534352 };
+
+/**
+ * Pays from the connected wallet: an ERC-20's `transfer(to, amount)` when `token` names one, otherwise
+ * the chain's own coin. Moves the wallet to the right chain first. Resolves to the transaction hash.
+ */
+export async function sendFromWallet(account: string, chain: string, token: string | null, to: string, amount: bigint): Promise<string> {
+  const wallet = await walletFor(account);
+  const chainId = EVM_CHAIN_IDS[chain];
+  if (!wallet || !chainId) throw new Error("Connect the EVM wallet that holds this account to send from it.");
+  await wallet.provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: `0x${chainId.toString(16)}` }] });
+  const word = (hex: string) => hex.padStart(64, "0");
+  const tx = token
+    ? { from: account, to: token, data: `0xa9059cbb${word(to.slice(2).toLowerCase())}${word(amount.toString(16))}` }
+    : { from: account, to, value: `0x${amount.toString(16)}` };
+  const hash = await wallet.provider.request({ method: "eth_sendTransaction", params: [tx] });
+  if (typeof hash !== "string") throw new Error("The wallet returned no transaction.");
+  return hash;
+}
+
 /**
  * `personal_sign` over `message`, as Intents reads it: `secp256k1:` and the base58 of r ‖ s ‖ v,
  * with v brought from the wallet's 27/28 to the recovery id 0/1 (docs/CONTEXT.md, "Trap: v").
