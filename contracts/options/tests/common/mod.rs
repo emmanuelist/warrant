@@ -421,7 +421,7 @@ pub async fn setup_with(config: near_sandbox::config::SandboxConfig) -> Env {
             Some("abi"),
         ),
         "new",
-        json!({"owner_id": "owner.sandbox", "intents_id": INTENTS}),
+        json!({"owner_id": "owner.sandbox", "intents_id": INTENTS, "retire_after_ns": (now_ns() + 30 * SECOND_NS).to_string()}),
     )
     .await;
     for (token, min) in [(WNEAR, WNEAR_ONE / 10), (TUSDC, TUSDC_ONE / 10)] {

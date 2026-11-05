@@ -162,6 +162,8 @@ Verified facts about everything this project depends on. Each entry says how it 
 
 - **A component-layer `display: none` loses to a display utility on the same element** (again, 2026-10-21): the phone's backing list kept Tailwind's `flex`. Toggle display with responsive utilities (`hidden lg:flex`) on elements that carry one.
 
+**An account holding more than 10 KB of state can't be deleted (2026-11-05).** The code doesn't count toward that. In the sandbox, `retire` with 12,143 bytes of state fails at the deletion unless the contract clears its state first, and passes when it does (E-029). A series costs about 400 bytes.
+
 **A view call can't reach a contract's refusal (2026-11-05).** `query call_function` does run a change method, but it can't attach a deposit, so `wrap.near.near_withdraw` and `intents.near.mt_transfer` both stop at "Requires attached deposit of exactly 1 yoctoNEAR". There is no `eth_call` equivalent for our 1-yocto methods, so the refusal room sends real transactions.
 
 **Devnet signer (D-017)**
@@ -177,7 +179,7 @@ Verified facts about everything this project depends on. Each entry says how it 
 - **Check it without deploying:** put a throwaway `{"projectId":"…","orgId":"…","settings":{"framework":"vite"}}` in `web/.vercel/project.json` (gitignored), run `vercel build --prod --yes`, then import `.vercel/output/functions/api/relay.func/api/relay.js` in Node. `vercel build` uploads nothing.
 - **Config:** public build values live in `web/.env.production`, which is committed and has no secrets. Only `RELAY_ACCOUNT_ID` and `RELAY_SECRET_KEY` go in the host's settings. A missing relayer answers 503 and the page still works.
 - **Keep it up to 2026-11-18, ideally 2026-11-25** (the hackathon's Q-012).
-- **GitHub Actions created no run for pushes or for a PR while `main` had no workflow.** `actions/workflows` lists 0 and `check-suites` shows only the Vercel, Render and Railway apps installed on the account, queued with 0 runs (2026-11-05). Other private repos on the account run normally. Expected to start once `ci.yml` reaches `main` through #23: **unverified**.
+- **GitHub Actions created no run for pushes or for a PR while `main` had no workflow.** `actions/workflows` lists 0 and `check-suites` shows only the Vercel, Render and Railway apps installed on the account, queued with 0 runs (2026-11-05). Other private repos on the account run normally. It started within seconds of `ci.yml` reaching `main` through #23, so a repo's first workflow has to land on the default branch.
 
 ## Environment
 | Var | Purpose | Where to get it |

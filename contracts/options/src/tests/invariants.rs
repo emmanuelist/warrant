@@ -80,13 +80,14 @@ fn set_ctx(predecessor: &AccountId, deposit_yocto: u128, now: u64) {
     );
 }
 
-fn set_failed_promise(now: u64) {
+/// The context `on_payout` runs in: its promise came back with `result`.
+fn set_promise_result(now: u64, result: PromiseResult) {
     testing_env!(
         context(&options(), 0, now),
         cached_vm_config(near_sdk::test_vm_config),
         RuntimeFeesConfig::test(),
         Default::default(),
-        vec![PromiseResult::Failed],
+        vec![result],
     );
 }
 
@@ -183,6 +184,8 @@ fn scheduled_payouts() -> Vec<(AccountId, String, u128)> {
 #[derive(Default)]
 struct World {
     now: u64,
+    /// When this sequence's contract allows `retire`.
+    retire_after: u64,
     /// The contract's balance inside Intents: what came in, less what left.
     inside_intents: BTreeMap<String, u128>,
     /// Proceeds paid out, per series.
@@ -205,6 +208,7 @@ enum Kind {
     Reclaim,
     Transfer,
     Retry,
+    Retire,
     Forged,
 }
 
@@ -222,6 +226,7 @@ impl Kind {
             Kind::Reclaim => "reclaim_collateral",
             Kind::Transfer => "mt_transfer",
             Kind::Retry => "retry_payout",
+            Kind::Retire => "retire",
             Kind::Forged => "forged",
         }
     }
@@ -289,7 +294,7 @@ fn draw(rng: &mut Rng, contract: &Contract, world: &World) -> Attempt {
         .unwrap_or_else(|| actor.clone());
     let amount = 1 + rng.below(4) as u128;
 
-    match rng.below(24) {
+    match rng.below(26) {
         0..=3 => {
             let kind = if rng.chance(3) { "put" } else { "call" };
             let per = 1 + rng.below(9) as u128;
@@ -571,6 +576,20 @@ fn draw(rng: &mut Rng, contract: &Contract, world: &World) -> Attempt {
                 ),
             }
         }
+        22 => {
+            let who = actor.clone();
+            Attempt {
+                kind: Kind::Retire,
+                actor,
+                series_id: None,
+                pays: None,
+                call: Box::new(move |contract, now| {
+                    set_ctx(&who, 1, now);
+                    let _ = contract.retire();
+                    None
+                }),
+            }
+        }
         // Calls that claim an authority the caller doesn't have.
         _ => {
             let stranger = actor.clone();
@@ -639,6 +658,11 @@ fn check(
     let list = contract.get_series_list(None, Some(U64(1_000)));
     let offers = contract.get_offers(None, Some(U64(1_000)));
     let mut books: BTreeMap<String, u128> = BTreeMap::new();
+    assert_eq!(
+        contract.get_config().payouts_in_flight.0,
+        0,
+        "{step}: a payout came back but still counts as in flight"
+    );
 
     for s in &list {
         let id = s.series_id.0;
@@ -733,12 +757,154 @@ fn check(
     }
 }
 
+#[derive(Default)]
+struct Tally {
+    accepted: BTreeMap<&'static str, u64>,
+    refused: BTreeMap<String, u64>,
+    steps: u64,
+    paid_out: u64,
+    failed_payouts: u64,
+    wound_down: u64,
+}
+
+/// Resolves what a call just scheduled, the way Intents would: each payout must go to the account
+/// entitled to it, and `fail` decides whether it lands or fails and stays owed.
+#[allow(clippy::too_many_arguments)]
+fn land_payouts(
+    contract: &mut Contract,
+    world: &mut World,
+    tally: &mut Tally,
+    at: &str,
+    kind: Kind,
+    series_id: Option<u64>,
+    entitled: Option<&AccountId>,
+    mut fail: impl FnMut() -> bool,
+) {
+    for (receiver, token, amount) in scheduled_payouts() {
+        let Some(entitled) = entitled else {
+            panic!(
+                "{at}: {} paid {receiver}, and it shouldn't pay anyone",
+                kind.name()
+            );
+        };
+        assert_eq!(
+            &receiver,
+            entitled,
+            "{at}: {} paid the wrong account",
+            kind.name()
+        );
+        if kind == Kind::Withdraw {
+            *world.withdrawn.entry(series_id.unwrap()).or_default() += amount;
+        }
+        if fail() {
+            tally.failed_payouts += 1;
+            set_promise_result(world.now, PromiseResult::Failed);
+        } else {
+            tally.paid_out += 1;
+            let inside = world.inside_intents.entry(token.clone()).or_default();
+            *inside = inside.checked_sub(amount).unwrap_or_else(|| {
+                panic!("{at}: paid out {amount} {token} the contract doesn't hold")
+            });
+            set_promise_result(world.now, PromiseResult::Successful(vec![]));
+        }
+        contract.on_payout(receiver, token, U128(amount));
+    }
+}
+
+/// `retire` went through: it must have been time, the contract must hold nothing, and all it may
+/// do is delete the account in the owner's favour.
+fn assert_retired_cleanly(world: &World, at: &str) {
+    assert!(
+        world.now >= world.retire_after,
+        "{at}: retired before its date"
+    );
+    for (token, held) in &world.inside_intents {
+        assert_eq!(*held, 0, "{at}: retired holding {held} {token}");
+    }
+    let receipts = get_created_receipts();
+    assert_eq!(receipts.len(), 1, "{at}: retire scheduled something else");
+    assert_eq!(receipts[0].receiver_id, options());
+    assert!(
+        matches!(
+            receipts[0].actions.as_slice(),
+            [MockAction::DeleteAccount { beneficiary_id, .. }] if *beneficiary_id == owner()
+        ),
+        "{at}: retire must only delete the account, for the owner"
+    );
+}
+
+/// Past every expiry, everyone takes what's theirs, then `retire` must go through and leave nothing
+/// behind. Whatever a sequence did, no money can be stuck. Any panic here fails the run.
+fn wind_down(contract: &mut Contract, world: &mut World, tally: &mut Tally, seed: u64) {
+    let at = format!("seed {seed} winding down");
+    let list = contract.get_series_list(None, Some(U64(100)));
+    let last_expiry = list.iter().map(|s| s.expiry_ns.0).max().unwrap_or(0);
+    world.now = world.now.max(world.retire_after).max(last_expiry);
+
+    for s in &list {
+        let (id, writer) = (s.series_id.0, s.writer.clone());
+        if s.collateral_held.0 > 0 {
+            set_ctx(&writer, 1, world.now);
+            let _ = contract.reclaim_collateral(U64(id));
+            land_payouts(
+                contract,
+                world,
+                tally,
+                &at,
+                Kind::Reclaim,
+                Some(id),
+                Some(&writer),
+                || false,
+            );
+            check(contract, world, &at, Kind::Reclaim, &writer, Some(id));
+        }
+        if s.proceeds_held.0 > 0 {
+            set_ctx(&writer, 1, world.now);
+            let _ = contract.withdraw_proceeds(U64(id));
+            land_payouts(
+                contract,
+                world,
+                tally,
+                &at,
+                Kind::Withdraw,
+                Some(id),
+                Some(&writer),
+                || false,
+            );
+            check(contract, world, &at, Kind::Withdraw, &writer, Some(id));
+        }
+    }
+    for who in people() {
+        for token in [WNEAR, USDC] {
+            if contract.get_owed(who.clone(), token.to_string()).0 > 0 {
+                set_ctx(&who, 1, world.now);
+                let _ = contract.retry_payout(token.to_string());
+                land_payouts(
+                    contract,
+                    world,
+                    tally,
+                    &at,
+                    Kind::Retry,
+                    None,
+                    Some(&who),
+                    || false,
+                );
+                check(contract, world, &at, Kind::Retry, &who, None);
+            }
+        }
+    }
+
+    set_ctx(&bob(), 1, world.now);
+    let _ = contract.retire();
+    assert_retired_cleanly(world, &at);
+    *tally.accepted.entry(Kind::Retire.name()).or_default() += 1;
+    tally.wound_down += 1;
+}
+
 #[test]
 fn invariants_hold_across_random_sequences() {
     quiet_panics();
-    let mut accepted: BTreeMap<&str, u64> = BTreeMap::new();
-    let mut refused: BTreeMap<String, u64> = BTreeMap::new();
-    let (mut paid_out, mut failed_payouts, mut steps) = (0u64, 0u64, 0u64);
+    let mut tally = Tally::default();
     let setting = |name: &str, default: u64| {
         std::env::var(name)
             .ok()
@@ -749,21 +915,24 @@ fn invariants_hold_across_random_sequences() {
     let length = setting("INVARIANT_STEPS", STEPS);
 
     for seed in 1..=sequences {
+        let mut rng = Rng(seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1);
+        let retire_after = NOW + MINUTE_NS * (10 + rng.below(110));
         // A new chain for every sequence.
         install(HashMap::new());
         set_ctx(&owner(), 0, NOW);
-        let mut contract = Contract::new(owner(), intents());
+        let mut contract = Contract::new(owner(), intents(), U64(retire_after));
         set_ctx(&owner(), 1, NOW);
         contract.allow_token(WNEAR.to_string(), U128(MIN_COLLATERAL));
         contract.allow_token(USDC.to_string(), U128(MIN_COLLATERAL));
-        let mut rng = Rng(seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1);
         let mut world = World {
             now: NOW,
+            retire_after,
             ..World::default()
         };
+        let mut retired = false;
 
         for step in 0..length {
-            steps += 1;
+            tally.steps += 1;
             let at = format!("seed {seed} step {step}");
             // Slowly enough that most series spend most of a sequence alive.
             if rng.chance(3) {
@@ -798,54 +967,51 @@ fn invariants_hold_across_random_sequences() {
                             kind.name()
                         );
                     };
-                    *refused.entry(code).or_default() += 1;
+                    *tally.refused.entry(code).or_default() += 1;
                     // The chain reverts a failed call: nothing it did survives.
                     contract = restore(saved);
                 }
                 Ok(deposit) => {
-                    *accepted.entry(kind.name()).or_default() += 1;
+                    *tally.accepted.entry(kind.name()).or_default() += 1;
                     if let Some((token, amount, refund)) = deposit {
                         assert!(refund <= amount, "{at}: refunded more than was sent");
                         *world.inside_intents.entry(token).or_default() += amount - refund;
                     }
-                    for (receiver, token, amount) in scheduled_payouts() {
-                        if let Some(entitled) = &pays {
-                            assert_eq!(
-                                &receiver,
-                                entitled,
-                                "{at}: {} paid the wrong account",
-                                kind.name()
-                            );
-                        } else {
-                            panic!(
-                                "{at}: {} paid {receiver}, and it shouldn't pay anyone",
-                                kind.name()
-                            );
-                        }
-                        if kind == Kind::Withdraw {
-                            *world.withdrawn.entry(series_id.unwrap()).or_default() += amount;
-                        }
-                        // One payout in eight fails at Intents and stays owed, with the money still here.
-                        if rng.chance(8) {
-                            failed_payouts += 1;
-                            set_failed_promise(world.now);
-                            contract.on_payout(receiver, token, U128(amount));
-                        } else {
-                            paid_out += 1;
-                            let inside = world.inside_intents.entry(token.clone()).or_default();
-                            *inside = inside.checked_sub(amount).unwrap_or_else(|| {
-                                panic!("{at}: paid out {amount} {token} the contract doesn't hold")
-                            });
-                        }
+                    if kind == Kind::Retire {
+                        assert_retired_cleanly(&world, &at);
+                        retired = true;
+                        break;
                     }
+                    // One payout in eight fails at Intents and stays owed, with the money still here.
+                    land_payouts(
+                        &mut contract,
+                        &mut world,
+                        &mut tally,
+                        &at,
+                        kind,
+                        series_id,
+                        pays.as_ref(),
+                        || rng.chance(8),
+                    );
                     check(&contract, &mut world, &at, kind, &actor, series_id);
                 }
             }
         }
+        if !retired {
+            wind_down(&mut contract, &mut world, &mut tally, seed);
+        }
     }
 
+    let Tally {
+        accepted,
+        refused,
+        steps,
+        paid_out,
+        failed_payouts,
+        wound_down,
+    } = &tally;
     println!(
-        "{steps} steps across {sequences} sequences; {paid_out} payouts landed, {failed_payouts} failed and stayed owed"
+        "{steps} steps across {sequences} sequences; {paid_out} payouts landed, {failed_payouts} failed and stayed owed; {wound_down} wound down to nothing and retired"
     );
     println!("accepted: {accepted:?}");
     println!("refused:  {refused:?}");
@@ -863,6 +1029,7 @@ fn invariants_hold_across_random_sequences() {
         Kind::Reclaim,
         Kind::Transfer,
         Kind::Retry,
+        Kind::Retire,
     ] {
         assert!(
             accepted.get(kind.name()).copied().unwrap_or(0) > 0,
@@ -896,6 +1063,7 @@ fn invariants_hold_across_random_sequences() {
         ERR_APPROVALS_NOT_SUPPORTED,
         ERR_SELF_TRANSFER,
         ERR_LENGTH_MISMATCH,
+        ERR_CANNOT_RETIRE,
     ] {
         assert!(
             refused.get(code).copied().unwrap_or(0) > 0,

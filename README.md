@@ -30,7 +30,7 @@ cargo near build non-reproducible-wasm --abi-features abi
 cargo test -- --test-threads=1
 ```
 
-You see 72 unit tests pass, then the `sandbox` suite (2) and the `signers` suite (1). One of the 72 runs 32,768 random steps across every action, checks the books after each against the transfers the contract actually schedules, and fails if any action or refusal was never reached (`cargo test invariants -- --nocapture` prints the counts). The sandbox suites download the live `intents.near` and `wrap.near` bytecode from mainnet and refuse to run if its hash differs from the pin in `tests/common/mod.rs`.
+You see 78 unit tests pass, then the `sandbox` suite (3) and the `signers` suite (1). One of the 78 runs about 32,000 random steps across every action, checks the books after each against the transfers the contract actually schedules, winds every sequence down until nothing is left, and fails if any action or refusal was never reached (`cargo test invariants -- --nocapture` prints the counts). The sandbox suites download the live `intents.near` and `wrap.near` bytecode from mainnet and refuse to run if its hash differs from the pin in `tests/common/mod.rs`.
 
 - Refusals covered: early reclaim, late exercise, exercise without the option, unauthorized calls, wrong-token deposits, double exercise.
 - `signers` has a wallet with no NEAR account write, list, cancel, claim and reclaim through relayed `erc191` intents.
@@ -51,7 +51,7 @@ Open `http://localhost:5173/?as=alice.sandbox` and you see the Lock Dial and a b
 
 **3. Try to break the lock.** Choose "Refusals" in the header, press "Send one yourself", then "Test the lock". The transaction is really sent and the contract refuses it. You see "Refused by chain", `ERR_NOT_EXPIRED` and the transaction hash.
 
-**4. Fill the refusal room.** `node scripts/run.mjs --devnet write && node scripts/run.mjs --devnet room` sends every attempt for real, 27 refused by name and 3 honest calls, and stops unless each one ends as it must. Reload the page and "Every way in, refused" reads them all back from chain.
+**4. Fill the refusal room.** `node scripts/run.mjs --devnet write && node scripts/run.mjs --devnet room` sends every attempt for real, 28 refused by name and 3 honest calls, and stops unless each one ends as it must. Reload the page and "Every way in, refused" reads them all back from chain.
 
 ## How it works
 
@@ -74,6 +74,7 @@ NEAR technology used:
 
 - **Not on mainnet, not hosted, not audited.** The list of what only mainnet can prove is in [docs/STATE.md](docs/STATE.md).
 - **Keys.** The contract will live on its own account, and whoever holds a full-access key there could deploy new code that moves the collateral. The plan is to delete every key before submission and let anyone check it with one command ([D-035](docs/DECISIONS.md)). Until then, "can't default" depends on that key holder.
+- **Retiring.** From 2026-11-26, once the contract holds nothing for anyone, anyone can retire it: its account is deleted and its storage deposit returns to its owner. It moves no tokens, and it refuses while it holds a single unit. A writer who never reclaims keeps it from retiring ([D-038](docs/DECISIONS.md), [SPEC](docs/SPEC.md)).
 - **Storage.** The contract pays for its own storage from a finite balance. Filling it would refuse transactions that add state until someone tops it up.
 - **Wallets.** Wallets with no NEAR account means EVM only. Solana and passkey signers aren't built ([D-030](docs/DECISIONS.md)).
 - **Physical settlement.** A holder must bring the strike to exercise. There's no cash settlement by design ([D-002](docs/DECISIONS.md)).

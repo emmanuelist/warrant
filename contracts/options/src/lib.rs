@@ -11,6 +11,7 @@ mod events;
 mod market;
 mod payouts;
 mod positions;
+mod retire;
 #[cfg(test)]
 mod tests;
 mod types;
@@ -46,12 +47,18 @@ pub struct Contract {
     balances: LookupMap<(SeriesId, AccountId), u128>,
     /// Payouts whose `mt_transfer` failed, claimable with `retry_payout`.
     owed: LookupMap<(AccountId, String), u128>,
+    /// How many `owed` entries exist, because `retire` can't list a `LookupMap`.
+    owed_entries: u64,
+    /// Payouts sent to Intents whose result hasn't come back yet.
+    payouts_in_flight: u64,
+    /// The earliest time `retire` can run, fixed at init.
+    retire_after_ns: u64,
 }
 
 #[near]
 impl Contract {
     #[init]
-    pub fn new(owner_id: AccountId, intents_id: AccountId) -> Self {
+    pub fn new(owner_id: AccountId, intents_id: AccountId, retire_after_ns: U64) -> Self {
         Self {
             owner_id,
             intents_id,
@@ -62,6 +69,9 @@ impl Contract {
             next_offer_id: 1,
             balances: LookupMap::new(StorageKey::Balances),
             owed: LookupMap::new(StorageKey::Owed),
+            owed_entries: 0,
+            payouts_in_flight: 0,
+            retire_after_ns: retire_after_ns.0,
         }
     }
 
@@ -94,6 +104,9 @@ impl Contract {
                     min_amount: U128(*min),
                 })
                 .collect(),
+            retire_after_ns: U64(self.retire_after_ns),
+            owed_entries: U64(self.owed_entries),
+            payouts_in_flight: U64(self.payouts_in_flight),
         }
     }
 

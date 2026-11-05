@@ -153,7 +153,7 @@ export function Refusals({ board, nowMs, viewer, onSheet }: { board: Board; nowM
           ))}
         </ol>
 
-        <RefusalRoom />
+        <RefusalRoom retireAfterNs={board.retireAfterNs} />
       </Wrap>
     </section>
   );

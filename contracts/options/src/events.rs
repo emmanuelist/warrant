@@ -88,4 +88,6 @@ pub enum OptionsEvent {
         token_id: String,
         amount: U128,
     },
+    #[event_version("1.0.0")]
+    Retired { beneficiary: AccountId },
 }

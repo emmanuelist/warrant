@@ -31,6 +31,8 @@ Append-only proof log. Every claim in the README, demo or submission points to a
 | E-026 | 2026-11-05 | The contract build reproduces: two Docker builds of pushed commit `1ffcc9f` are byte-identical, 323,125 bytes, `code_hash CPKpW1fWrJmpWXLudZP4yuYxHy9Y36tfzwqgs6zuMTng`, and the wasm names that commit. The private repo exists, with 22 issues numbered as the docs cite them. | Output below | `1ffcc9f` |
 | E-027 | 2026-11-05 | The refusal room works on the devnet against byte-identical Intents and wNEAR. `scripts/run.mjs room` sent 27 attempts that reached all 25 refusals the contract names, plus 3 honest calls that went through. Refused attempts moved no money. The app reads all 30 back from chain: 27 refused by name, 3 went through, 0 off their rule. A wrong transaction shows as off its rule, a hash that doesn't exist as unread, and an unrecorded network says so. No overflow at 390 or 1440, 0 axe violations, 0 detector anti-patterns. **Mainnet: not yet sent.** | Output below | `20-refusal-room` |
 | E-028 | 2026-11-05 | The invariants hold across 32,768 random steps in 256 sequences, in 12 s. Every action was accepted and all 25 refusals were reached, and the run fails if any wasn't. The money is checked against the `mt_transfer` promises each call actually schedules, and refused calls roll back from a storage snapshot, as on chain. It catches real bugs: all 6 deliberately injected ones failed within 113 steps, including removing the time lock. | Output below | `21-invariants` |
+| E-029 | 2026-11-05 | `retire` returns the deposit and can't touch money (D-038). On the real runtime it deleted the account with 12,143 bytes of state, and the owner received the whole balance; without clearing its state first, it fails. In the random run, 255 of 256 sequences wound down to nothing and retired, and the other retired cleanly mid-sequence, so no money got stuck. All 6 bugs injected into `retire` were caught. The room rehearsal now has 28 attempts at all 26 named refusals, plus 3 honest calls. **Not on mainnet.** | Output below | `18-retire` |
+| E-030 | 2026-11-05 | The contract with `retire` reproduces and a fresh clone passes. Two Docker builds are byte-identical, 326,736 bytes, `code_hash GGvJPAmHR6RJr5NvN5Au5x16SvWp5ABKshteMfTGo6h`. A clone passes fmt, clippy, the wasm build, 78 unit tests, `sandbox` 3 and `signers` 1, plus web lint, typecheck and build. Those ran at `deaf217`, whose code `git diff` shows is unchanged by the rewrite in D-039. The hash embeds the commit, so mainnet gets its own build. The first CI run on GitHub, on `main`, passed both jobs. | Output below | `18-retire` |
 
 ## E-001 output
 ~~~text
@@ -858,3 +860,52 @@ one unit of collateral lost          seed 1 step 13: exercise panicked with some
 exercise refunds one too many        seed 1 step 13: nep141:usdc.near inside Intents doesn't match the books
 the premium goes to the buyer        seed 1 step 43: buy paid the wrong account
 ~~~
+
+## E-029 output
+~~~
+cargo test --test sandbox retire -- --nocapture          (30 series, on the real runtime)
+retired with 12143 bytes of state beyond the code; the owner received 20.01 NEAR
+test retire_returns_the_deposit_once_nothing_is_held ... ok
+Same test with the three clear() calls removed: fails, "retire had failed receipts"
+
+cargo test --lib invariants -- --nocapture
+32678 steps across 256 sequences; 5730 payouts landed, 338 failed and stayed owed; 255 wound down to nothing and retired
+accepted: buy 602 · cancel_offer 312 · close 468 · create 2896 · exercise 1178 · list 888 · mt_transfer 349
+          reclaim_collateral 283 · retire 256 · retry_payout 85 · withdraw_proceeds 249 · write 1450
+refused:  all 26 named refusals reached, ERR_CANNOT_RETIRE 1277
+
+Injected into retire.rs (each reverted):
+retire ignores collateral          seed 14 step 50: retired holding 4 nep141:usdc.near; retire_while_holding_collateral_refused fails
+retire ignores proceeds            seed 190 step 86: retired holding 4 nep141:usdc.near; retire_with_unclaimed_proceeds_refused fails
+retire ignores its date            seed 6 step 10: retired before its date; retire_before_its_date_refused fails
+retire ignores owed payouts        retire_with_a_payout_owed_refused fails
+retire ignores payouts in flight   retire_with_a_payout_in_flight_refused fails
+retire pays the caller             seed 1 winding down: retire must only delete the account, for the owner
+
+node scripts/run.mjs --devnet room
+retire-holding         ERR_CANNOT_RETIRE              JCdnBH7cky7kGU2cSioPsUHwBTkEEgTf53p9Hz4tSzp6
+every refused attempt so far refunded in full, the contract's balances unchanged
+31 attempts ended as room.json says
+
+Playwright: tally 28 refused, 3 went through, 26 distinct codes, 0 off, 0 unread
+390, 768, 1440: no overflow · axe on #refusals: 0 violations · 0 console errors
+
+Gate: fmt, clippy -D warnings, wasm 326615 bytes, 78 unit, sandbox 3, signers 1; web lint 0, typecheck, build
+~~~
+
+## E-030 output
+~~~
+=== reproducible, twice, at deaf21711920aac77f124a1fba30b5cbcd7fe501
+build 1 exit 0 · 190s   GGvJPAmHR6RJr5NvN5Au5x16SvWp5ABKshteMfTGo6h 326736
+build 2 exit 0 · 182s   GGvJPAmHR6RJr5NvN5Au5x16SvWp5ABKshteMfTGo6h 326736
+BYTE-IDENTICAL across two builds
+
+=== fresh clone
+fmt 0 · clippy --all-targets 0 · wasm build 0 · all tests 0
+78 passed · devnet 1 ignored · sandbox 3 passed · signers 1 passed
+npm ci 0 · lint 0 · typecheck 0 · build 0
+
+=== GitHub Actions
+run 41988517094, push to main at bf3639f: contracts success, web success
+~~~
+

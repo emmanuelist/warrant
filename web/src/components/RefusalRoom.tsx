@@ -1,7 +1,8 @@
 import NumberFlow from "@number-flow/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
 import { explorer } from "../lib/config";
+import { utc } from "../lib/format";
 import { readOutcome, recorded } from "../lib/refusals";
 import ROOM from "../lib/room.json";
 import { Out } from "./parts";
@@ -15,9 +16,10 @@ interface Attempt {
 }
 
 const ATTEMPTS = ROOM as Attempt[];
-const FAMILIES = [...new Set(ATTEMPTS.map((attempt) => attempt.family))];
+const REFUSED_FAMILIES = [...new Set(ATTEMPTS.filter((attempt) => attempt.expect).map((attempt) => attempt.family))];
+const HONEST = ATTEMPTS.filter((attempt) => !attempt.expect);
 const REFUSED_TOTAL = ATTEMPTS.filter((attempt) => attempt.expect).length;
-const HONEST_TOTAL = ATTEMPTS.length - REFUSED_TOTAL;
+const HONEST_TOTAL = HONEST.length;
 const NAMED_TOTAL = new Set(ATTEMPTS.map((attempt) => attempt.expect).filter(Boolean)).size;
 /** How many transactions are read from the archival node at once. */
 const READ_AT_ONCE = 4;
@@ -32,7 +34,7 @@ const asExpected = (attempt: Attempt, result: Result | undefined) => result?.kin
  * when the room scrolls into view. Nothing here is a simulation: a view call can't attach the
  * deposit these methods ask for, so each attempt is a transaction anyone can open.
  */
-export function RefusalRoom() {
+export function RefusalRoom({ retireAfterNs }: { retireAfterNs: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [results, setResults] = useState<Record<string, Result>>({});
   const [reading, setReading] = useState(false);
@@ -126,19 +128,42 @@ export function RefusalRoom() {
         </div>
       </div>
 
-      <div className="room-families mt-12">
-        {FAMILIES.map((family) => (
-          <section key={family} className="room-family" aria-label={family}>
-            <h4 className="plate-label text-label text-panel-ink-3">{family}</h4>
-            <ol className="mt-3">
-              {ATTEMPTS.filter((attempt) => attempt.family === family).map((attempt) => (
+      <div className="room-layout mt-12">
+        <div className="room-families">
+          {REFUSED_FAMILIES.map((family) => (
+            <Family key={family} name={family}>
+              {ATTEMPTS.filter((attempt) => attempt.expect && attempt.family === family).map((attempt) => (
                 <Row key={attempt.id} attempt={attempt} result={results[attempt.id]} />
               ))}
-            </ol>
+            </Family>
+          ))}
+        </div>
+
+        <aside className="room-rail">
+          <Family name={HONEST[0]?.family ?? ""}>
+            {HONEST.map((attempt) => (
+              <Row key={attempt.id} attempt={attempt} result={results[attempt.id]} />
+            ))}
+          </Family>
+          <section id="room-retire" className="room-family" aria-label="The way out">
+            <h4 className="plate-label text-label text-panel-ink-3">The way out</h4>
+            <p className="room-note mt-3 text-ui text-panel-ink-2">
+              The one way this contract ever goes away. From <span className="fig text-panel-ink">{utc(retireAfterNs)}</span>, once it holds nothing for anyone, anyone can retire it: its account is deleted and its storage deposit returns to its owner. It moves no
+              tokens, and while it holds a single unit it refuses, as the last attempt under "The lock" shows.
+            </p>
           </section>
-        ))}
+        </aside>
       </div>
     </div>
+  );
+}
+
+function Family({ name, children }: { name: string; children: ReactNode }) {
+  return (
+    <section className="room-family" aria-label={name}>
+      <h4 className="plate-label text-label text-panel-ink-3">{name}</h4>
+      <ol className="mt-3">{children}</ol>
+    </section>
   );
 }
 

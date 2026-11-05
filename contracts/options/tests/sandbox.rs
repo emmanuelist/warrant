@@ -297,3 +297,102 @@ async fn writer_closes_and_cancels_through_mainnet_intents() -> testresult::Test
     assert!(format!("{:?}", forged.failures()).contains("ERR_NOT_INTENTS"));
     Ok(())
 }
+
+/// `retire` on the real runtime. The contract carries more state than the chain lets an account
+/// be deleted with (10 KB), so this also proves it clears its state first (docs/CONTEXT.md).
+#[tokio::test]
+async fn retire_returns_the_deposit_once_nothing_is_held() -> testresult::TestResult<()> {
+    const SERIES: u64 = 30;
+    let env = setup().await;
+    let account = |name: &str| near_api::Account(id(name)).view();
+
+    env.fund_wnear("alice.sandbox", u128::from(SERIES) * WNEAR_ONE)
+        .await;
+    let expiry = now_ns() + 180 * SECOND_NS;
+    for _ in 0..SERIES {
+        env.ok_via_intents(
+            "alice.sandbox",
+            WNEAR,
+            WNEAR_ONE,
+            create_msg("call", WNEAR_ONE, 4_800_000, expiry),
+        )
+        .await;
+    }
+
+    // While it holds anything for anyone, nobody can retire it.
+    let refused = env
+        .call("carol.sandbox", OPTIONS, "retire", json!({}), YOCTO)
+        .await;
+    assert!(
+        format!("{:?}", refused.receipt_failures()).contains("ERR_CANNOT_RETIRE"),
+        "retire must refuse while collateral is held"
+    );
+    assert_eq!(
+        env.intents_balance(OPTIONS, WNEAR).await,
+        u128::from(SERIES) * WNEAR_ONE
+    );
+
+    env.wait_until_expired(SERIES).await;
+    for series in 1..=SERIES {
+        env.ok(
+            "alice.sandbox",
+            OPTIONS,
+            "reclaim_collateral",
+            json!({"series_id": series.to_string()}),
+            YOCTO,
+        )
+        .await;
+    }
+    assert_eq!(env.intents_balance(OPTIONS, WNEAR).await, 0);
+    assert_eq!(
+        env.intents_balance("alice.sandbox", WNEAR).await,
+        u128::from(SERIES) * WNEAR_ONE,
+        "every unit went back to the writer"
+    );
+
+    let contract = account(OPTIONS).fetch_from(&env.net).await?.data;
+    let code = near_api::Contract(id(OPTIONS))
+        .wasm()
+        .fetch_from(&env.net)
+        .await?
+        .data
+        .code_base64
+        .len() as u64
+        * 3
+        / 4;
+    let state = contract.storage_usage - code;
+    assert!(
+        state > 10_000,
+        "this test needs more state than the 10 KB deletion limit, has {state} bytes"
+    );
+    let owner_before = account("owner.sandbox")
+        .fetch_from(&env.net)
+        .await?
+        .data
+        .amount;
+
+    // A stranger can call it. Only the owner can benefit.
+    env.ok("carol.sandbox", OPTIONS, "retire", json!({}), YOCTO)
+        .await;
+
+    assert!(
+        account(OPTIONS).fetch_from(&env.net).await.is_err(),
+        "the contract's account is gone"
+    );
+    let owner_after = account("owner.sandbox")
+        .fetch_from(&env.net)
+        .await?
+        .data
+        .amount;
+    assert!(
+        owner_after.as_yoctonear() - owner_before.as_yoctonear() >= contract.amount.as_yoctonear(),
+        "the owner received the contract's whole balance"
+    );
+    println!(
+        "retired with {state} bytes of state beyond the code; the owner received {}",
+        near_api::NearToken::from_yoctonear(
+            owner_after.as_yoctonear() - owner_before.as_yoctonear()
+        )
+    );
+    Ok(())
+}
