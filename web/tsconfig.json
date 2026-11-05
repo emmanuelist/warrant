@@ -15,7 +15,9 @@
     "skipLibCheck": true,
     // Imports reachable from vite.config.ts name their file (Vite's native config loader resolves no extensions).
     "allowImportingTsExtensions": true,
+    // The host transpiles api/ and relay/ file by file with this config; its emitted .js must import .js.
+    "rewriteRelativeImportExtensions": true,
     "types": ["vite/client"]
   },
-  "include": ["src", "relay", "vite.config.ts"]
+  "include": ["src", "relay", "api", "vite.config.ts"]
 }
