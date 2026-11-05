@@ -36,6 +36,7 @@ Append-only proof log. Every claim in the README, demo or submission points to a
 | E-031 | 2026-11-05 | Warrant is live on mainnet. `warrant-options.near` holds a series with its collateral inside `intents.near`, all 31 refusal-room attempts ended as `room.json` says, 1Click swapped real funds, and a real wallet (Intear, through near-connect) signed a real purchase from the hosted page. The first real runs also found what the devnet couldn't: gas is charged up front, the free node rate-limits an ordinary visit, and the page crashed once a price existed. All three are fixed | [Page](https://warrant-options.vercel.app) · [contract](https://nearblocks.io/address/warrant-options.near) · [wallet-signed buy](https://nearblocks.io/txns/CvMRoftt8jhibE7pchQvZ3JBb9bXnDXUNAkwzonseGPU) · room hashes in `web/.env.production`; output below | f303ca2 |
 | E-032 | 2026-11-05 | A wallet with no NEAR account did the whole round trip on mainnet through the hosted page and relayer: USDC in from Base, bought, exercised, wrote a put, and was paid back on Base. The same `0x` account appears on every leg. The relayer signed with its function-call key and spends about 0.0018 NEAR per action | [Paid on Base](https://basescan.org/tx/0xa3a88f87aa6663d4539a1a7151e93c9ddb441e79279d5096434298d34529f172) · [deposit](https://basescan.org/tx/0xbd6289cc629a617fd25d6f0ecadde052a58421a3eb2d67d8704deb31bb340b1e) · [relayed exercise](https://nearblocks.io/txns/EyQj34zmL54Cm3fCLW8AB6Qf9DFxRMNuRvSdVNRSoNw1); output below | (this branch) |
 | E-033 | 2026-11-05 | A position moved between accounts as an Intents asset on mainnet, signed in a real wallet: from Warrant's ledger into Intents, across to a `0x` account, and back to Warrant's ledger through the relayer. With E-031 and E-032 this meets M1 and M2. `scripts/verify.mjs` checks these claims from a terminal with no key, and a clean clone of `mainnet-v0.1.0` rebuilds to the deployed `code_hash` | [Into Intents](https://nearblocks.io/txns/2nk3oMrDNLYcdQ2WAfRtN6YCeYQV4G3SCYnJ287evCxD) · [to the `0x` account](https://nearblocks.io/txns/2zXKYV6nrKdtjVhg2zid8oEzXcNZRuyqym1QaEZzP1eP) · [back through the relayer](https://nearblocks.io/txns/GZ58bApzGnChGTD1hP7d8mmzsct2PZwAZjPEt89MnWVB); output below | (this branch) |
+| E-034 | 2026-11-05 | The film's story ran as one continuous take on mainnet, on series 9: a real wallet wrote a call, the same wallet was refused its collateral back, a `0x` wallet paid in from Base, bought, exercised and was paid on Base, the chain's clock opened the lock on camera, and the same press paid out. Every moment is measured from the take, and a take that misses one fails | [Refused](https://nearblocks.io/txns/5CZPK5VjqZBp1CBcNTKpmMGUpJMLyQkmPLKAB1c4DLhJ) · [reclaim after expiry](https://nearblocks.io/txns/7H3qFaWrfgT5X4UiJAssdivXvJp5ZKojbRsn6m3jUhRb) · [paid on Base](https://basescan.org/tx/0x8da626d385c7ded1e1a2563b91d3f560263aa60b5768c9691a5243516ea42508) · [the route](https://explorer.near-intents.org/transactions/07be69cf0ef766b95cdec24f206656ef6deb6d1107a3a63cc1650a59b1f002a5); output below | (this branch) |
 
 ## E-001 output
 ~~~text
@@ -1020,4 +1021,27 @@ cargo near build reproducible-wasm, Docker image sourcescan/cargo-near:0.22.0-ru
 Size: 326736 bytes · SHA-256 checksum bs58: DADQfyxqwetsaZBh5n7JEQ8MnwZKQiqzCxaS465svgYz, the deployed code_hash
 Twice in two fresh clones, the first attempt stopped in about 15 s with an SSL error while cargo fetched near/intents
 inside the container ("decryption failed or bad record mac"). Run again in the same clone, it built.
+~~~
+
+## E-034 output
+~~~
+The take, series 9, expiry 2026-11-05T13:22:00.000Z (written 8 minutes before), writer e96016e5...da50 in Intear, buyer 0x05db...7b0b
+
+write, 0.05 wNEAR per option x 2, strike 0.15 USDC   DRpbpD6kGg8d57ax7uiPg1i47JoRShBWzwR3LMAbZpin
+offer, off camera, 0.02 USDC                          4gRYrdzdTyxopFdozdmrNYZpJXiu23iqeLCWjVVWnbE8
+reclaim before expiry: ERR_NOT_EXPIRED                5CZPK5VjqZBp1CBcNTKpmMGUpJMLyQkmPLKAB1c4DLhJ
+   Intear's own prompt said it first: "This transaction will likely fail ... ERR_NOT_EXPIRED"
+0.2 USDC from Base, "Send from your wallet"           0x1ddb4fc8908e118959a061c07a51748fecb2d3cbf284a102686a1b7ee83629c3
+   in the wallet's Intents balance after 37.9 s            BgFY9iRkLAQ2e5Fty62hY5KKB9FV2vaS37SRPmAjRNeg
+buy, relayed                                          GFfpJvJPN9yFYAob3W9YtfqL5shgZJCgpp5sdtpFPFhw
+exercise, relayed; the sheet said "Exercising nets +0.0465 USDC per option at that price."
+                                                      H8tJcXbTaiQq7rYeKeb1MrXQBiWmBtuXyAo8HP3sEyMC
+0.05 wNEAR out: 0.194013 USDC on Base after 36.5 s    0x8da626d385c7ded1e1a2563b91d3f560263aa60b5768c9691a5243516ea42508
+   the whole route on NEAR Intents' explorer          07be69cf0ef766b95cdec24f206656ef6deb6d1107a3a63cc1650a59b1f002a5
+the dial opened 20.4 s into its shot, and the chain said expired
+reclaim after expiry, same lever, same wallet         7H3qFaWrfgT5X4UiJAssdivXvJp5ZKojbRsn6m3jUhRb
+the room read back live: 28 refused, 3 honest, 0 off, 0 unread
+
+Capture: 2280x1284 at 80 to 99 fps through the browser's screencast; 2x held 8 fps with a sheet's blur open (D-044).
+Draft master: 139.5 s, 1920x1080, -16.0 LUFS, true peak -2.3 dBFS, no black frames (ffmpeg blackdetect, ebur128).
 ~~~
