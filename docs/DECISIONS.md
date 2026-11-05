@@ -525,3 +525,31 @@ The P2s: the levers and the board contradicted the sheets; lamp colours broke "b
 - CLAUDE.md rule 8 still caps spends. No step asks for the user's wallet.
 - The demo's collateral stays locked until 2026-11-26 unless a series is closed first.
 
+## D-037 · What the proof has to beat · 2026-11-05 · accepted · extends D-006, D-036
+**Context:** The builder's earlier entries, Setoff (a winner of Arc Microgrants, film 1:43) and Valuta (film 2:10), set the bar for this one. I read both READMEs and film pipelines and looked at the films frame by frame.
+- **The bar they set:** a refusal room (Setoff: 17 attempts, 15 refused by name, 2 controls), "Proof: nothing here is a mockup" and "Limits" sections, a verified contract with no admin key, and a film whose figures come from the chain and whose takes fail if they miss their moment. The pipeline is Playwright as the camera, ElevenLabs narration with forced-aligned captions, an ffmpeg score on a beat grid, and Remotion for the frame.
+- **Where they can be beaten:** footage is captured at 1600×900 and device scale 1 through Playwright's recorder and looks soft at 1080p. The camera never moves and stays on one page for long stretches. The wallet on camera is an injected demo signer. Everything happens on one chain.
+
+**Decision:** Port the pipeline (the user's own code) and go past it at these points. Each one is real proof, not decoration.
+- **Refusal room (#20).** Every refusal the contract names that mainnet can reach, as a real failed transaction anyone can open, plus honest controls that go through, all read back from chain by hash with a live count. The contract names 25. Setoff's were read-only calls; here that isn't possible, because a view call can't attach a deposit and our methods stop at "Requires attached deposit of exactly 1 yoctoNEAR" before any refusal (probed on `wrap.near` and `intents.near`, 2026-11-05). About 0.05 NEAR in gas.
+- **One complete moment from another chain (#11).** A wallet with no NEAR account deposits USDC from Base, buys an option, exercises it, and is paid on Base. It's the track's own line, "settle across chains through NEAR Intents", and it doesn't port.
+- **The film (#22).** Under 3:00, aiming for 2:00 to 2:30, because longer isn't better.
+  - Capture at device scale 2, so figures stay sharp after YouTube re-encodes. The method gets tested at the first shoot.
+  - Camera moves measured from element rectangles, so a push-in can't crop the figure, which is why the earlier films dropped zoom.
+  - The authored moment: same lever, same wallet. Reclaim is refused, the dial runs out on a real short-dated series, and the same press pays.
+  - Shots beyond the app: the real wallet prompt, NearBlocks, BaseScan, `near account list-keys`.
+  - A bolt on each refusal and a vault release at expiry, synthesized like the earlier scores.
+  - Figures from a facts file read off mainnet, and a take that misses its moment fails.
+- **Nobody to switch it off (#18).** The track says "no custodian, nobody to switch it off". A locked account and a reproducible build are that line, provable with two commands. I recommend locking; it's still the user's call (D-036).
+- **Invariants (#21).** Randomized operation sequences with the backing invariant checked after each step, and counters that prove each path was reached.
+- **README (#13).** Setoff's proven structure, with this project's proofs.
+
+**Alternatives:**
+- A longer film or more chains: rejected. The organizers' own advice is "Show one complete moment".
+- New product surface before M2: rejected. The market-maker agent stays gated by D-006.
+
+**Consequences:**
+- #20, #21 and #22 are added, and #11 becomes the round trip.
+- The contract account starts with 3.5 NEAR, not 3.7. That leaves about 26.9 KB of state beyond the code, against about 3.5 KB for 5 series and 3 offers on the devnet, and pays for the round trip inside the 5 NEAR.
+- Narration uses ElevenLabs, with a key that stays out of this repo. macOS `say` proves the pipeline without one.
+

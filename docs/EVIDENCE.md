@@ -27,6 +27,7 @@ Append-only proof log. Every claim in the README, demo or submission points to a
 | E-022 | 2026-10-27 | The trade card's terms no longer collide on long figures (reported by the user on series #3: "12.345678 tUSDC" ran into "2.50 wNEAR" in 146px columns). Each term is a size container. Both figures share one size fitted to the longer one (14.6px for #3; 22px for short figures and wide cards), and the countdown fits up to "366d 23:59:59". Measured at 1024 / 1280 / 1440 / 1511 / 1920 for series #1 and #3, everything fits. The gate is green and the detector finds 0 anti-patterns. | Playwright measurements; output below | pre-commit (D-011) |
 | E-023 | 2026-11-05 | Ready for the first commit, and nothing on mainnet has moved underneath us. The live `intents.near` and `wrap.near` code hashes still match the pins, Intents reports nothing paused, and the organizers' page now answers the pre-window question (D-034). On the tree to be committed: contract gate green (71 unit with the new double-exercise test, 2 + 1 sandbox), wasm 322,988 bytes, web lint 0 and build green, 0 secret-scan hits in 140 files. | Output below | pre-commit |
 | E-024 | 2026-11-05 | The deploy is rehearsed and the host checked, with nothing deployed and nothing spent. A fresh clone passes the CI steps. `scripts/run.mjs` runs allow, fund, share, write and three real refusals on the devnet, and both refused exercises refund in full. Its NEP-413 signature over a live 1Click intent passes signature checks in mainnet `simulate_intents`, and a well-formed wrong signature is refused for its signature. The relayer as `vercel build` emits it relays EVM-signed intents end to end on the devnet, after a fix for an import crash that would have hit production. The README's steps were walked in a browser. | Output below | `10-mainnet-runbook` |
+| E-025 | 2026-11-05 | The history split by area is the same work, checked commit by commit. Its tree equals the old single commit except for one reworded line in D-034. The contract commit passes fmt, clippy, the wasm build and 71 unit tests. The web layer passes lint and typecheck and fails `vite build` only for want of `index.html`, as its message says. The web app commit passes lint, typecheck and build. A fresh clone at the tip passes every CI step. A reproducible Docker build works on this machine and embeds its commit; its `code_hash` has not yet been compared across two builds. | Output below | `10-mainnet-runbook` |
 
 ## E-001 output
 ~~~text
@@ -744,4 +745,26 @@ relay check passed
 /?as=alice.sandbox       board, dial, three recorded refusals; 0 console errors, no overflow
 Send one yourself → Test the lock    "Refused by chain ERR_NOT_EXPIRED · DL1CyiWQ7y…"
 /account?as=bob.sandbox  account page for bob.sandbox, no overflow
+~~~
+
+## E-025 output
+~~~
+git diff 812187a (old single commit) 397038e (split tip), and 6d21b4d 706778b (old and new tips)
+ docs/DECISIONS.md | 2 +-     (D-034's consequence line, in both)
+
+8462073 feat(contract)    fmt 0 · clippy --all-targets 0 · wasm build 0 · cargo test --lib 0, 71 passed
+6db5192 feat(web) layer   npm ci 0 · lint 0 · typecheck 0 · vite build 1, "Cannot resolve entry module index.html"
+37e1f46 feat(web) app     lint 0 · typecheck 0 · build 0
+52d7dd9 test(contract)    contracts/ identical to the tip, so the fresh clone's run below covers it
+
+Fresh clone of 10-mainnet-runbook at b459a15
+contracts   fmt 0 · clippy --all-targets 0 · wasm build 0 · cargo test -- --test-threads=1 0
+            71 passed · devnet 1 ignored · sandbox 2 passed · signers 1 passed
+web         npm ci 0 · lint 0 · typecheck 0 · build 0
+
+cargo near build reproducible-wasm, at 42a6209 (the commit before the split), 426 s in Docker
+image       sourcescan/cargo-near:0.22.0-rust-1.97.1@sha256:7467038b…2234
+wasm        323125 bytes
+snapshot    git+https://github.com/emmanuelist/warrant?rev=42a6209114aa2ff057e6110051c78d59cefff2d7
+code_hash   BRavJ4DHsU97Zc7vxZk2zEBtJ77wccdBQm1SJH5QQbfL
 ~~~
