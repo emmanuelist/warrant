@@ -76,6 +76,6 @@ Local UI against real chain state: `cargo test --test devnet -- --ignored --noca
 ## Operating protocol
 - **Start:** read the open issues for the current milestone and the last 3 entries of docs/DECISIONS.md. Say the next action back before starting.
 - **Work:** one issue at a time, on a branch `<issue>-<slug>`. Each PR says `Closes #<n>` and carries its evidence.
-- **Finish** (or `/foundation handoff`): append EVIDENCE and DECISIONS, update CONTEXT with anything verified, close issues with evidence links, rewrite docs/STATE.md, commit (from 2026-11-01).
+- **Finish** (or `/foundation handoff`): append EVIDENCE and DECISIONS, update CONTEXT with anything verified, close issues with evidence links, rewrite docs/STATE.md, commit.
 - **Truth rule:** never write a claim into STATE, README, an issue or a PR that wasn't verified this session. Write "unverified" instead.
 - **Decisions:** never relitigate an accepted decision without new evidence. Supersede it with a new entry.
