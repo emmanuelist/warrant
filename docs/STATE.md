@@ -8,10 +8,12 @@ _Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) ·
 2. `scripts/mainnet-deploy.sh contract`, then `holder` and `relayer`. Then `node scripts/run.mjs` with `allow`, `fund 0.85`, `swap 0.3`, `share 0.5`, `write`, `refusals`.
 3. Add the printed `VITE_REFUSAL_TXS` to `web/.env.production`, then host the page and relayer (`scripts/mainnet-deploy.sh host`) and send one real transaction from the page.
 4. The first real 1Click payout to Base (#11).
+
+Claude provides the wallet and records the video. The user only funds, posts on X and confirms the payload (D-036). The demo winds down from 2026-11-26 (#25).
 **Blocked on (all the user's):**
-1. **#24:** 5 NEAR to `d0482bffd77daa246ff50cd36cd8c8392548a0cf0fc7d6ccd887a3675f084148`. Blocks M1. The account is still `UNKNOWN_ACCOUNT`.
+1. **#24:** 5 NEAR to `d0482bffd77daa246ff50cd36cd8c8392548a0cf0fc7d6ccd887a3675f084148`, on the NEAR Protocol network. Blocks M1. The account is still `UNKNOWN_ACCOUNT`. A background check watches for it.
 2. **#6:** permission to create the private repo and push. The harness's permission layer refused `gh repo create --private` + `git push` as an upload, so nothing has left this machine. CI, also part of M1, can't run until this lands.
-3. **#10:** where the web app and relayer are hosted. Recommendation: Vercel, already logged in as `emmanuelist`.
+3. **#10:** the web app and relayer go on Vercel.
 
 ## Works (verified this session)
 | Capability | Verified by | Evidence |
@@ -51,4 +53,4 @@ _Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) ·
 
 ## Open questions
 - Can one project place in several tracks? (user → NEAR Discord or Telegram, #3). The page only confirms multi-track tagging.
-- Lock the contract account before submission? It costs about 3.3 NEAR of stake that never comes back and makes "can't default" checkable in one command (D-035, #18). I recommend yes; the user decides at M3.
+- Lock the contract account before submission? It keeps about 3.4 NEAR for good (D-036), and it makes "can't default" checkable in one command (D-035, #18). I recommend yes; the user decides at M3.

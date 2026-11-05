@@ -507,3 +507,21 @@ The P2s: the levers and the board contradicted the sheets; lamp colours broke "b
 - After locking, a bug means a new account for new series. Old series keep running on the old code.
 - The contract pays for storage (SPEC), and its spare balance is finite. Filling it would refuse transactions that add state until someone tops it up. What that blocks beyond new writes is **unverified**, and the README states it as a limit.
 
+## D-036 · Claude provides the wallet and records the demo · 2026-11-05 · accepted · extends D-004, D-035
+**Context:** On 2026-11-05 the user asked Claude to provide the wallet that proves wallet signing, and to record the demo of the whole product working live, without them intervening.
+
+**Decision:**
+- **Wallet.** The user's personal wallet is not involved. The holder account, whose key Claude generated and funds with pennies, signs through a real near-connect wallet driven in a scripted browser. near-connect's manifest lists Meteor, Intear and MyNearWallet on the web, and a `near-cli` entry. Which one works is **unverified** until tried. A home-made wallet wouldn't prove compatibility with real ones, so it doesn't count.
+- **Video.** Claude records it from real mainnet runs in a scripted browser and adds captions with ffmpeg, under 3 minutes (#13). Nothing is staged: real wallet, real hashes.
+- **What stays with the user.** The organizers reserve two steps for the human: the post on X ("the human posts it and gives you the link") and confirming the exact payload ("only after the human has confirmed the exact payload"). The same page says "The human records a demo". Claude makes the video and the user publishes it, and the user was told this.
+- **Winding down (#25).** The hosted demo should stay up to 2026-11-25 (Q-012), so the demo series expire on 2026-11-26. Then everything is reclaimed, withdrawn from Intents and unwrapped, and the holder and relayer accounts are deleted into the dev account.
+- **What the lock costs.** Roughly 3.4 NEAR stays in a locked account for good, once its spare balance is swept out before the keys go. This refines D-035's "about 3.3". Still the user's call at M3.
+
+**Alternatives:**
+- The user's own wallet: they declined it.
+- A home-made near-connect wallet: real signing, but it proves nothing about real wallets.
+
+**Consequences:**
+- CLAUDE.md rule 8 still caps spends. No step asks for the user's wallet.
+- The demo's collateral stays locked until 2026-11-26 unless a series is closed first.
+
