@@ -47,6 +47,8 @@ const SCALE = [
 const R = { mark: 438, tickOut: 414, tickMinor: 402, tickMajor: 388, label: 358, inner: 322 };
 
 const expiryMs = (s: Series) => Number(BigInt(s.expiry_ns) / 1_000_000n);
+/** How long after a lock runs out it may still play its release: until the chain read after this removes it. */
+const RELEASE_WINDOW_MS = 20_000;
 
 /** The blued arc: clockwise along the lock track from the index to `deg`. */
 function arcPath(deg: number): string {
@@ -85,11 +87,20 @@ export function Dial({ board, nowMs, onSelect }: { board: Board; nowMs: number; 
   const shown = live.find((s) => s.series_id === pointed) ?? next;
   const shownAmount = (s: Series) => `${units(s.collateral_held, board.tokens[s.collateral_token]).short} ${board.tokens[s.collateral_token]?.symbol ?? ""}`.trim();
   const stage = useStageLight();
+  // A lock that has just run out opens on the dial, once: the animation plays out in CSS.
+  const opening = board.series.find((s) => nowMs >= expiryMs(s) && nowMs - expiryMs(s) < RELEASE_WINDOW_MS && BigInt(s.collateral_held) > 0n);
 
   return (
     <div ref={stage} className="dial-stage">
       <DialFace arcDeg={next ? nextDeg : null} sweepDelay={sweepDelay}>
-        <div className="dial-center" aria-hidden="true">
+        {opening && (
+          <div key={opening.series_id} className="dial-release" aria-hidden="true">
+            <span className="dial-release-flash" />
+            <span className="dial-release-ring" />
+            <span className="dial-release-ring" data-second="true" />
+          </div>
+        )}
+        <div className="dial-center" data-opening={opening ? "true" : undefined} aria-hidden="true">
           <p className="plate-label dial-kicker">
             Locked in <span className="dial-kicker-near">NEAR </span>Intents
           </p>
@@ -105,6 +116,11 @@ export function Dial({ board, nowMs, onSelect }: { board: Board; nowMs: number; 
               </span>
             ))}
           </p>
+          {opening && (
+            <p key={opening.series_id} className="dial-opened fig">
+              Lock #{opening.series_id} open · {shownAmount(opening)}
+            </p>
+          )}
           {shown && (
             <p className="dial-next">
               <span className="plate-label">{shown === next ? "Next opens in" : `#${shown.series_id} opens in`}</span>

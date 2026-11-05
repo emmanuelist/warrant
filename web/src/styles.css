@@ -1069,6 +1069,35 @@ li {
     color: var(--centre-accent);
   }
 
+  /* A lock running out: a gold ring leaves the blued centre, and gold says which one opened. */
+  .dial-release {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .dial-release-flash,
+  .dial-release-ring {
+    position: absolute;
+    inset: 17.8%;
+    border-radius: 50%;
+    opacity: 0;
+  }
+  .dial-release-flash {
+    background: radial-gradient(circle, oklch(0.88 0.13 84 / 0.62), oklch(0.8 0.15 80 / 0.16) 62%, transparent 72%);
+  }
+  .dial-release-ring {
+    border: max(2px, 0.55cqi) solid var(--color-release);
+  }
+  .dial-opened {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 13%;
+    font-size: max(12px, 3cqi);
+    color: var(--centre-accent);
+    opacity: 0;
+  }
+
   /* A lock on the ring: blued steel, set in a white collar so it reads on the printed scale. */
   .dial-marker {
     position: absolute;
@@ -1185,11 +1214,33 @@ li {
     .dial-sweep {
       animation: sweep 60s linear infinite;
     }
+
+    .dial-release-flash {
+      animation: release-flash 2s var(--ease-out-quick) both;
+    }
+    .dial-release-ring {
+      animation: release-ring 1.5s var(--ease-out-quick) both;
+    }
+    .dial-release-ring[data-second="true"] {
+      animation-delay: 0.22s;
+    }
+    .dial-opened {
+      animation: release-note 5.2s var(--ease-out-quick) both;
+    }
+    .dial-center[data-opening="true"] .dial-next {
+      animation: release-next 5.2s var(--ease-out-quick) both;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .dial-seconds {
       display: none;
+    }
+    .dial-center[data-opening="true"] .dial-next {
+      visibility: hidden;
+    }
+    .dial-opened {
+      opacity: 1;
     }
   }
 
@@ -2284,6 +2335,28 @@ li {
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes release-flash {
+  0% { opacity: 0; scale: 0.72; }
+  14% { opacity: 1; scale: 1; }
+  100% { opacity: 0; scale: 1.04; }
+}
+
+@keyframes release-ring {
+  0% { opacity: 0.95; scale: 0.42; }
+  100% { opacity: 0; scale: 1.42; }
+}
+
+@keyframes release-note {
+  0%, 6% { opacity: 0; translate: 0 4px; }
+  14%, 84% { opacity: 1; translate: 0 0; }
+  100% { opacity: 0; translate: 0 0; }
+}
+
+@keyframes release-next {
+  0%, 88% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 @keyframes dial-in {
