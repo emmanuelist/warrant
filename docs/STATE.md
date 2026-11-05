@@ -1,5 +1,5 @@
 # State
-_Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) · repo: private `emmanuelist/warrant`, public on 2026-11-13_
+_Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) · repo: public, https://github.com/emmanuelist/warrant (D-039)_
 
 **Name:** Warrant (D-014). **Thesis:** Options that can't default and need no oracle: the collateral is locked inside NEAR Intents until expiry.
 **Milestone:** M1, due 2026-11-05 23:59 UTC · **Deadline:** 2026-11-14 23:59 UTC · 9 days left on 2026-11-05
@@ -10,9 +10,8 @@ _Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) ·
 4. The first real 1Click payout to Base (#11).
 
 Claude provides the wallet and records the video. The user only funds, posts on X and confirms the payload (D-036). The demo winds down from 2026-11-26 (#25). What the proof has to beat: D-037 (#11, #18, #20, #21, #22).
-**Blocked on (all the user's):**
+**Blocked on (the user's):**
 1. **#24:** 5 NEAR to `d0482bffd77daa246ff50cd36cd8c8392548a0cf0fc7d6ccd887a3675f084148`, on the NEAR Protocol network. Blocks M1. The account is still `UNKNOWN_ACCOUNT`. A background check watches for it.
-2. **#23 needs merging, as a merge commit:** the permission layer refuses a merge without review. CI, part of M1, hasn't run yet; it should start once `ci.yml` reaches `main`.
 
 The web app and relayer go on Vercel, and narration uses an ElevenLabs key read at run time and never copied here (the user agreed to both, 2026-11-05). Deploy only a reproducible build: `target/near/options.wasm` is overwritten by any plain `cargo near build`, and `mainnet-deploy.sh` refuses one without its NEP-330 snapshot.
 

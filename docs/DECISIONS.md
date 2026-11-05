@@ -574,3 +574,18 @@ The P2s: the levers and the board contradicted the sheets; lamp colours broke "b
 - A writer who never reclaims keeps the contract from retiring, and the deposit stays until they do. That is no worse than the plain lock, and nobody's money is at risk.
 - The contract changed, so the artifact in E-026 is superseded. Mainnet gets a new double build.
 
+## D-039 · The repo goes public now · 2026-11-05 · accepted · supersedes the date in D-007
+**Context:** D-007 kept the repo private until 2026-11-13, so rivals couldn't read the design during the window. On 2026-11-05 the user said to make it public. The rules only ask that it be public by the deadline.
+
+**Decision:** Public from 2026-11-05, after these steps:
+- **The record was written for a private repo, so personal notes came out first.** They now live in the gitignored `internal/`. The commits not yet on `main` were rewritten. The code is identical, checked with `git diff` against the old tip, but their hashes changed, so `1ffcc9f` in E-026 and the branch hashes in E-025 no longer resolve.
+- **Two issues were replaced, because GitHub keeps an issue's edit history.** #24 replaces #1 (funding), and #25 replaces #19 (winding down). Older entries that cite #1 or #19 mean those.
+- **Every commit on every branch was scanned for secrets** before the flip.
+
+**Alternatives:** Waiting for 2026-11-13: rivals would see less for eight more days, but the user chose otherwise.
+
+**Consequences:**
+- Rivals can read the contract and the plan nine days before the deadline.
+- CI is free and unmetered on a public repo.
+- PRs merge with merge commits, not squash, so any commit a deployed contract names stays in `main`'s history.
+
