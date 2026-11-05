@@ -182,6 +182,8 @@ Verified facts about everything this project depends on. Each entry says how it 
 
 **SourceScan verifies by rebuilding (2026-11-05).** `POST https://api.sourcescan.dev/api/verify/rust` with `{"networkId":"mainnet","accountId":"<contract>"}` asks for no signature and no deposit, and a contract with no keys goes through. It reads the NEP-330 metadata, clones the public repo at the commit named there and rebuilds. Its backend then writes the result to `v2-verifier.sourcescan.near` and pins the repo to IPFS, so the call isn't a dry run. NearBlocks shows the record at `/address/<contract>/contract/code`, and "Contract Locked" on `/address/<contract>/contract`; `?tab=contract` opens neither (E-037).
 
+**A browser blocker flagged Intear's site (2026-11-05).** The HiveFury extension told a user that `https://wallet.intear.tech` "is not secure" and gave no reason. The certificate is valid, it's the address near-connect's manifest loads Intear from and Intear's repo names, and it isn't on MetaMask's, ScamSniffer's or Polkadot's lists. The cause is unknown.
+
 **Devnet signer (D-017)**
 - Every devnet account shares the sandbox genesis key (`near_sandbox::config::DEFAULT_GENESIS_ACCOUNT_PRIVATE_KEY`, public key `ed25519:5BGSaf6YjVm7565VzWQHNxoyEjwr3jUpRJSGjREvU9dB`). `tests/devnet.rs` writes it to `web/.env.development.local`.
 - WebCrypto imports an Ed25519 secret only as PKCS#8: the 16-byte RFC 8410 header `302e020100300506032b657004220420` + the 32-byte seed (the first half of NEAR's 64-byte secret).
