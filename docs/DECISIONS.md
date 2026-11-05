@@ -666,3 +666,18 @@ The P2s: the levers and the board contradicted the sheets; lamp colours broke "b
 
 **Consequences:** A visitor needs about $20 to write a series and cents to buy one. #25 gains a step: `disallow_token` for every token once the judging window ends.
 
+## D-046 · The owner's key is replaced on the account and on Intents · 2026-11-05 · accepted · refines D-035
+**Context:** A copy of the owner account's key and seed phrase left this machine. That account owns the contract, wrote series 1, 10 and 11, and receives the deposit when the contract retires. `owner_id` has no setter and the contract has no keys (D-035), so the account has to stay and stay in safe hands.
+
+**Decision:** Keep the account and replace its key in both places that trust it.
+- **On the account:** add a new full-access key, then delete the old one.
+- **On Intents:** `add_public_key` and `remove_public_key` in one transaction. Intents keeps its own list, and it trusts an implicit account's original key until that key is removed there, whatever the account's access keys say. Deleting the key from the account alone would have left it able to sign intents and move the account's balances inside Intents.
+- **No seed phrase this time.** The new key exists only as a key file, so there's one less thing to expose. The file has to be backed up again, and not as plain text anywhere that syncs.
+
+**Alternatives:**
+- Move everything to a new account: `retire` pays `owner_id`, which can't change.
+- Remove the key from the account only: see above.
+- Leave it, since the amounts are small: that key could also have taken the deposit when `retire` pays it, about 3.5 NEAR.
+
+**Consequences:** The old key opens nothing (E-036). Scripts read the same file at the same path, and sign with whatever key it holds. An exposed key on an implicit account is a two-step fix from now on (docs/CONTEXT.md).
+

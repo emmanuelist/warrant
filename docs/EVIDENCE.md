@@ -38,6 +38,7 @@ Append-only proof log. Every claim in the README, demo or submission points to a
 | E-033 | 2026-11-05 | A position moved between accounts as an Intents asset on mainnet, signed in a real wallet: from Warrant's ledger into Intents, across to a `0x` account, and back to Warrant's ledger through the relayer. With E-031 and E-032 this meets M1 and M2. `scripts/verify.mjs` checks these claims from a terminal with no key, and a clean clone of `mainnet-v0.1.0` rebuilds to the deployed `code_hash` | [Into Intents](https://nearblocks.io/txns/2nk3oMrDNLYcdQ2WAfRtN6YCeYQV4G3SCYnJ287evCxD) · [to the `0x` account](https://nearblocks.io/txns/2zXKYV6nrKdtjVhg2zid8oEzXcNZRuyqym1QaEZzP1eP) · [back through the relayer](https://nearblocks.io/txns/GZ58bApzGnChGTD1hP7d8mmzsct2PZwAZjPEt89MnWVB); output below | (this branch) |
 | E-034 | 2026-11-05 | The film's story ran as one continuous take on mainnet, on series 9: a real wallet wrote a call, the same wallet was refused its collateral back, a `0x` wallet paid in from Base, bought, exercised and was paid on Base, the chain's clock opened the lock on camera, and the same press paid out. Every moment is measured from the take, and a take that misses one fails | [Refused](https://nearblocks.io/txns/5CZPK5VjqZBp1CBcNTKpmMGUpJMLyQkmPLKAB1c4DLhJ) · [reclaim after expiry](https://nearblocks.io/txns/7H3qFaWrfgT5X4UiJAssdivXvJp5ZKojbRsn6m3jUhRb) · [paid on Base](https://basescan.org/tx/0x8da626d385c7ded1e1a2563b91d3f560263aa60b5768c9691a5243516ea42508) · [the route](https://explorer.near-intents.org/transactions/07be69cf0ef766b95cdec24f206656ef6deb6d1107a3a63cc1650a59b1f002a5); output below | (this branch) |
 | E-035 | 2026-11-05 | The contract's account has no keys. Its last access key is deleted, `view_access_key_list` returns none on three nodes, `near account list-keys` prints an empty table, and `verify.mjs` says so. The `code_hash` is unchanged. The smallest series is now about $20 of collateral (D-045), two small series have offers on the board, and `retire` would leave about 1.7 KB of state, under the chain's limit for deleting an account | [The deletion](https://nearblocks.io/txns/A1mX5E2cJSUkjWMhiQoZ1bn5fJCekprQBHJgBb11qi5j); output below | (this branch) |
+| E-036 | 2026-11-05 | The owner account's old key opens nothing. It's gone from the account on three nodes, `intents.near` no longer trusts it, the new key signs on both, and the balances inside Intents didn't move | [Add](https://nearblocks.io/txns/Zd4H9tDZxCgJqh1NCtt6fhcNbApWy6Pq2eTgAYm653P) · [swap on Intents](https://nearblocks.io/txns/CtxtrLNm12XpbB57QzTV5uxFrTCtyrmfvhf9HM4Mcz86) · [delete](https://nearblocks.io/txns/23EeeWrUy1ARERGZv1Tx4z3TUFHgjh4hJ6gm3nMB3Rqj); output below | (this branch) |
 
 ## E-001 output
 ~~~text
@@ -1090,4 +1091,31 @@ The Write form on the production build against mainnet, 1440 and 390, no overflo
 
 The film's keys chapter, re-rendered from the output above; the rest of the take is E-034
 Master: 139.5 s, 1920x1080, -16.0 LUFS, peak -2.3 dBFS, no black frames (ffmpeg blackdetect, ebur128).
+~~~
+
+## E-036 output
+~~~
+Owner account d0482bffd77daa246ff50cd36cd8c8392548a0cf0fc7d6ccd887a3675f084148
+old key ed25519:F23dZLwKtwWF4hBWHarhLTvWHjSTcSLweArLua7BQTLT, new key ed25519:4eTtHJ6KcPKGC5EyqkGz2EU3WThh5VSMmLwZ2P1TJW2j
+
+before    account [old]        Intents has_public_key(old) true   public_keys_of [old]
+add       Zd4H9tDZxCgJqh1NCtt6fhcNbApWy6Pq2eTgAYm653P    signed by the old key
+          account [new, old]   Intents has_public_key(old) true
+swap      CtxtrLNm12XpbB57QzTV5uxFrTCtyrmfvhf9HM4Mcz86   signed by the new key: add_public_key(new), remove_public_key(old)
+          account [new, old]   Intents has_public_key(old) false  has_public_key(new) true
+delete    23EeeWrUy1ARERGZv1Tx4z3TUFHgjh4hJ6gm3nMB3Rqj   signed by the new key
+          account [new]        Intents public_keys_of [new]
+
+view_access_key_list, finality final
+  rpc.mainnet.near.org    [new]  block 223180598
+  near.drpc.org           [new]  block 223180601
+  free.rpc.fastnear.com   [new]  block 223180602
+
+Inside Intents: USDC 0.305542 and wNEAR 0.05, the same before and after. The contract's owner_id, offers and collateral are unchanged.
+
+$ node scripts/run.mjs swap-check    (signs a live 1Click intent and only simulates it)
+payload: {"standard":"nep413","recipient":"intents.near","public_key":"ed25519:4eTtHJ6KcPKGC5EyqkGz2EU3WThh5VSMmLwZ2P1TJW2j"}
+simulate_intents refused: ... "insufficient balance or overflow"
+That quote is for 0.1 wNEAR and the account holds 0.05. The engine checks the key before it runs an intent
+(core/src/engine/mod.rs, execute_signed_intent), so reaching the balance means the new key was accepted.
 ~~~

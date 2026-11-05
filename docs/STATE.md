@@ -4,16 +4,17 @@ _Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) ·
 **Name:** Warrant (D-014). **Thesis:** Options that can't default and need no oracle: the collateral is locked inside NEAR Intents until expiry.
 **Milestone:** M3, due 2026-11-12 23:59 UTC. M1 and M2 met on 2026-11-05 · **Deadline:** 2026-11-14 23:59 UTC · 9 days left on 2026-11-05
 **Live:** https://warrant-options.vercel.app · contract `warrant-options.near` (E-031)
-**Next action:** the user watches the film (`internal/film/film/warrant-master.mp4`). After that: a secret scan of every commit, then open the repo (D-039), then the X post and the payload (#14). Re-scan rivals on 2026-11-07 (#12).
+**Next action:** the user backs up the owner's new key file (D-046) and watches the film (`internal/film/film/warrant-master.mp4`). After that: a secret scan of every commit, then open the repo (D-039), then the X post and the payload (#14). Re-scan rivals on 2026-11-07 (#12).
 
 Claude provides the wallet and records the video. The user only funds, posts on X and confirms the payload (D-036). The demo winds down from 2026-11-26 (#25). What the proof has to beat: D-037 (#18, #22).
-**Blocked on (the user's):** a look at the film, then the post on X and the payload's own fields (lead name, email, NEAR address). Drafts of both are in `internal/submission/`.
+**Blocked on (the user's):** the key backup and a look at the film, then the post on X and the payload's own fields (lead name, email, NEAR address). Drafts of both are in `internal/submission/`.
 
 Vercel hosts the page and relayer. Deploy with `vercel build --prod --yes` and `vercel deploy --prebuilt --prod --yes` in `web/`; `vercel link` leaves a `web/.env.local` and `web/.gitignore` to delete. Narration uses an ElevenLabs key read at run time and never copied here (the user agreed to both, 2026-11-05).
 
 ## Works (verified this session)
 | Capability | Verified by | Evidence |
 |---|---|---|
+| **The owner's key replaced (2026-11-05):** a copy left this machine, so the old key is gone from the account and `intents.near` no longer trusts it. The new key signs on both, and no balance moved | RPC on three nodes, `has_public_key`, `run.mjs swap-check` | E-036, D-046 |
 | **Nobody holds the keys (2026-11-05):** the contract's account has no keys on three nodes, its `code_hash` is unchanged, and `verify.mjs` says so. Writing a series now takes about $20 of collateral, two small series have offers on the board, and the Write form opens at the minimum. `retire` would leave about 1.7 KB of state | `near account list-keys`, `scripts/verify.mjs`, RPC, Playwright on the production build | E-035, D-045 |
 | **The film (2026-11-05):** the whole story in one continuous run on mainnet, on one series, with the chain's clock opening the lock on camera; 2:19.5, under X's 2:20 limit. Its keys chapter is the real output after the lock. The user hasn't seen it yet | `internal/film/scripts/shoot.mjs`, `render.ts`, `score.ts`, ffmpeg QA | E-034, D-044 |
 | **Anyone can check it (2026-11-05):** `node scripts/verify.mjs` reads the claims off mainnet and Base with no key; a clean clone of `mainnet-v0.1.0` rebuilds to the deployed `code_hash`; a position moved between accounts as an Intents asset | `scripts/verify.mjs`, `cargo near build reproducible-wasm`, the hosted page | E-033 |
@@ -45,7 +46,7 @@ Vercel hosts the page and relayer. Deploy with `vercel build --prod --yes` and `
 |---|---|---|---|
 | Options contract, `code_hash DADQfyxqwetsaZBh5n7JEQ8MnwZKQiqzCxaS465svgYz`, tag `mainnet-v0.1.0`, **no access keys**, about 3.5 NEAR until `retire` | mainnet | `warrant-options.near` | 2026-11-05 |
 | Page and relayer | Vercel | https://warrant-options.vercel.app, `/api/relay` | 2026-11-05 |
-| Owner and writer, key only on this machine | mainnet | `d0482bff…4148`: about 0.23 NEAR; inside Intents 0.05 wNEAR, 0.31 USDC; wrote series 1, 10 and 11 | 2026-11-05 |
+| Owner and writer, key replaced 2026-11-05 (D-046), key file only on this machine until the user's backup | mainnet | `d0482bff…4148`: about 0.23 NEAR; inside Intents 0.05 wNEAR, 0.31 USDC; wrote series 1, 10 and 11 | 2026-11-05 |
 | Demo holder (Intear wallet, D-040), the film's writer | mainnet | `e96016e5…da50`: about 0.12 NEAR; inside Intents 0.05 wNEAR, 0.52 USDC | 2026-11-05 |
 | Demo EVM wallet, key in `~/.near-credentials/warrant-evm/` | Base + Intents | `0x05db…7b0b`: 0.43 USDC and gas on Base; inside Intents 0.32 USDC; wrote series 3 and holds the last long of series 1 | 2026-11-05 |
 | Relayer, function-call key on `intents.near` / `execute_intents` | mainnet | `f6464d4e…90ec`: about 0.18 NEAR, allowance about 0.13 (D-042) | 2026-11-05 |
