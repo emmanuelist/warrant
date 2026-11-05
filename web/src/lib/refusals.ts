@@ -55,7 +55,7 @@ const fromBase64 = (base64: string) => new TextDecoder().decode(Uint8Array.from(
 
 /** How one recorded attempt ended, from its receipts alone: the contract's refusal, if any, and whether anything failed. */
 export async function readOutcome(hash: string, signer: string): Promise<{ err: string | null; failed: boolean }> {
-  const tx = await rpc<TxResult>("tx", { tx_hash: hash, sender_account_id: signer, wait_until: "NONE" }, config.archivalRpcUrl);
+  const tx = await rpc<TxResult>("tx", { tx_hash: hash, sender_account_id: signer, wait_until: "NONE" }, config.archivalRpcUrls);
   const failed = tx.receipts_outcome.filter((r) => typeof r.outcome.status === "object" && r.outcome.status !== null && "Failure" in r.outcome.status);
   return { err: JSON.stringify(failed).match(/ERR_[A-Z_]+/)?.[0] ?? null, failed: failed.length > 0 };
 }
@@ -63,11 +63,11 @@ export async function readOutcome(hash: string, signer: string): Promise<{ err: 
 /**
  * A refused transaction read back from chain by its hash: who sent what, the contract's refusal
  * from its failed receipt, Intents' refund from its event log, and the block's time. Old hashes
- * need an archival node (`config.archivalRpcUrl`).
+ * need an archival node (`config.archivalRpcUrls`).
  */
 export async function readRefusal(hash: string, signer: string): Promise<ReadBack> {
-  const tx = await rpc<TxResult>("tx", { tx_hash: hash, sender_account_id: signer, wait_until: "NONE" }, config.archivalRpcUrl);
-  const block = await rpc<{ header: { timestamp_nanosec: string } }>("block", { block_id: tx.transaction_outcome.block_hash }, config.archivalRpcUrl);
+  const tx = await rpc<TxResult>("tx", { tx_hash: hash, sender_account_id: signer, wait_until: "NONE" }, config.archivalRpcUrls);
+  const block = await rpc<{ header: { timestamp_nanosec: string } }>("block", { block_id: tx.transaction_outcome.block_hash }, config.archivalRpcUrls);
 
   const call = tx.transaction.actions.map((a) => (typeof a === "string" ? null : a.FunctionCall)).find(Boolean);
   const args = call ? (json(fromBase64(call.args)) as Record<string, unknown> | null) : null;

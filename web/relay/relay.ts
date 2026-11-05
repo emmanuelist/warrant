@@ -9,11 +9,12 @@
  * `handle` is a Fetch-API handler, so any host that runs one can serve it; the dev server mounts it
  * at /api/relay (vite.config.ts).
  */
-import { rpcAt, viewAt } from "../src/lib/nearRpc.ts";
+import { anyNode, RpcError, rpcAt, viewAt } from "../src/lib/nearRpc.ts";
 import { type Outcome, signAndSend } from "../src/lib/nearTx.ts";
 
 export interface RelayConfig {
-  rpcUrl: string;
+  /** Nodes to try in order: a shared host's address can be rate-limited by any one of them. */
+  rpcUrls: string[];
   /** The Intents contract: the payload's `verifying_contract` and the relayed call's receiver. */
   intents: string;
   /** Warrant's options contract: the only contract a relayed intent may act on. */
@@ -119,22 +120,26 @@ function limit(signer: string, now: number) {
 }
 
 /** The chain's clock: Intents checks deadlines against block time, which a devnet may run ahead of. */
-async function chainNowMs(cfg: RelayConfig): Promise<number> {
-  const block = await rpcAt<{ header: { timestamp_nanosec: string } }>(cfg.rpcUrl, "block", { finality: "final" });
+async function chainNowMs(url: string): Promise<number> {
+  const block = await rpcAt<{ header: { timestamp_nanosec: string } }>(url, "block", { finality: "final" });
   return Number(BigInt(block.header.timestamp_nanosec) / 1_000_000n);
 }
 
 /** Checks, previews and sends one signed payload; resolves to the final execution outcome. */
 export async function relay(body: unknown, cfg: RelayConfig): Promise<Outcome> {
   const signed = isRecord(body) ? body.signed : undefined;
-  const signer = check(signed, cfg, await chainNowMs(cfg));
+  // The node that answers first serves the rest of this request.
+  const { node, nowMs } = await anyNode(cfg.rpcUrls, async (url) => ({ node: url, nowMs: await chainNowMs(url) }));
+  const signer = check(signed, cfg, nowMs);
   limit(signer, Date.now());
   try {
-    await viewAt(cfg.rpcUrl, cfg.intents, "simulate_intents", { signed: [signed] });
+    await viewAt(node, cfg.intents, "simulate_intents", { signed: [signed] });
   } catch (error) {
-    throw new Refused(422, `Intents would refuse it: ${error instanceof Error ? error.message : String(error)}`);
+    // A busy node hasn't said anything about the intent.
+    if (!(error instanceof RpcError) || error.busy) throw error;
+    throw new Refused(422, `Intents would refuse it: ${error.message}`);
   }
-  return signAndSend(cfg.rpcUrl, cfg.secretKey, cfg.accountId, {
+  return signAndSend(node, cfg.secretKey, cfg.accountId, {
     receiverId: cfg.intents,
     actions: [{ method: "execute_intents", args: { signed: [signed] }, gas: GAS, deposit: 0n }],
   });

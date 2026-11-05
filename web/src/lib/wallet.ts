@@ -33,7 +33,7 @@ function getConnector(): Promise<NearConnector> {
   connector ??= import("@hot-labs/near-connect").then(async ({ NearConnector }) => {
     const instance = new NearConnector({
       network: "mainnet",
-      providers: { mainnet: [config.rpcUrl] },
+      providers: { mainnet: config.rpcUrls },
     });
     await instance.whenManifestLoaded;
     return instance;

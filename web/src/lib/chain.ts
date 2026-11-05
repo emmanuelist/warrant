@@ -109,12 +109,19 @@ async function all<T>(method: string): Promise<T[]> {
   }
 }
 
+/** A token's symbol and decimals don't change, and every refresh would otherwise read them again. */
+const knownTokens = new Map<string, Token>();
+
 async function tokenOf(id: string): Promise<Token> {
   const contract = nep141(id);
   if (!contract) return { id, symbol: id, decimals: null };
+  const known = knownTokens.get(id);
+  if (known) return known;
   try {
     const meta = await view<{ symbol: string; decimals: number }>(contract, "ft_metadata");
-    return { id, symbol: meta.symbol, decimals: meta.decimals };
+    const token = { id, symbol: meta.symbol, decimals: meta.decimals };
+    knownTokens.set(id, token);
+    return token;
   } catch {
     return { id, symbol: id, decimals: null };
   }

@@ -113,7 +113,7 @@ export function App() {
         <Problem
           title="Can't read the chain"
           heading="The board is dark"
-          detail={`${state.message} · ${config.rpcUrl}`}
+          detail={config.network === "mainnet" ? state.message : `${state.message} · ${config.rpcUrl}`}
           action={
             <button type="button" className="plate-label mt-8 h-10 rounded-full bg-panel-ink px-4 text-meta text-panel hover:bg-ink-hover" onClick={() => void reload()}>
               Try again

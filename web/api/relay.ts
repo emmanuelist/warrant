@@ -3,6 +3,7 @@
  * page. RELAY_* are secrets set in the host's settings and never reach the bundle.
  */
 import { handle } from "../relay/relay.ts";
+import { MAINNET_NODES } from "../src/lib/nearRpc.ts";
 
 declare const process: { env: Record<string, string | undefined> };
 
@@ -16,7 +17,7 @@ export default {
       });
     }
     return handle(request, {
-      rpcUrl: process.env.VITE_RPC_URL ?? "https://free.rpc.fastnear.com",
+      rpcUrls: process.env.VITE_RPC_URL ? [process.env.VITE_RPC_URL] : MAINNET_NODES,
       intents: process.env.VITE_INTENTS_CONTRACT ?? "intents.near",
       options: process.env.VITE_OPTIONS_CONTRACT ?? "warrant-options.near",
       accountId,

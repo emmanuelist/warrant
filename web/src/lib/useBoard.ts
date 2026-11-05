@@ -3,11 +3,12 @@ import { useCallback, useEffect, useState } from "react";
 import { type Board, loadBoard } from "./chain";
 import { syncChainClock } from "./clock";
 
-const REFRESH_MS = 8_000;
+/** Public nodes limit each visitor, so this stays a slow background read; a transaction reloads at once. */
+const REFRESH_MS = 15_000;
 
 type State = { status: "loading" } | { status: "error"; message: string } | { status: "ready"; board: Board };
 
-/** The board, refreshed from chain every few seconds; `reload` after a transaction. */
+/** The board, refreshed from chain while it's on screen; `reload` after a transaction. */
 export function useBoard(viewer: string | null) {
   const [state, setState] = useState<State>({ status: "loading" });
 
@@ -27,14 +28,20 @@ export function useBoard(viewer: string | null) {
 
   useEffect(() => {
     let cancelled = false;
+    let reading = false;
     const tick = async () => {
-      if (!cancelled) await reload();
+      if (cancelled || reading || document.hidden) return;
+      reading = true;
+      await reload();
+      reading = false;
     };
     void tick();
     const id = window.setInterval(tick, REFRESH_MS);
+    document.addEventListener("visibilitychange", tick);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", tick);
     };
   }, [reload]);
 

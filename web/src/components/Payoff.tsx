@@ -13,7 +13,7 @@ const M = { top: 24, right: 14, bottom: 26, left: 46 };
 /** A value with at most `digits` fraction digits, trailing zeros trimmed to two. */
 function fmt(value: number, digits = 4): string {
   const fixed = Math.abs(value) < 1e-12 ? 0 : value;
-  const text = fixed.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: digits });
+  const text = fixed.toLocaleString("en-US", { minimumFractionDigits: Math.min(2, digits), maximumFractionDigits: digits });
   return fixed < 0 ? text.replace("-", "−") : text;
 }
 

@@ -59,7 +59,7 @@ function devRelay(): Plugin {
       const env = loadEnv(server.config.mode, server.config.envDir, "");
       if (!env.RELAY_ACCOUNT_ID || !env.RELAY_SECRET_KEY) return;
       const cfg: RelayConfig = {
-        rpcUrl: env.VITE_RPC_URL ?? "",
+        rpcUrls: [env.VITE_RPC_URL ?? ""],
         intents: env.VITE_INTENTS_CONTRACT ?? "",
         options: env.VITE_OPTIONS_CONTRACT ?? "",
         accountId: env.RELAY_ACCOUNT_ID,

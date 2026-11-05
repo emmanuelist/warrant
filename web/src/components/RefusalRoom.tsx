@@ -21,8 +21,8 @@ const HONEST = ATTEMPTS.filter((attempt) => !attempt.expect);
 const REFUSED_TOTAL = ATTEMPTS.filter((attempt) => attempt.expect).length;
 const HONEST_TOTAL = HONEST.length;
 const NAMED_TOTAL = new Set(ATTEMPTS.map((attempt) => attempt.expect).filter(Boolean)).size;
-/** How many transactions are read from the archival node at once. */
-const READ_AT_ONCE = 4;
+/** How many transactions are read at once: archival nodes turn away a visitor who asks for more. */
+const READ_AT_ONCE = 2;
 
 type Result = { kind: "reading" } | { kind: "error"; message: string } | { kind: "done"; err: string | null; failed: boolean };
 
