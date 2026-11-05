@@ -5,10 +5,10 @@ export type RefusalId = "reclaim-early" | "exercise-expired" | "exercise-unheld"
 
 /**
  * The refusals band's recorded transactions on this network: `id:signer:hash,…` in
- * VITE_REFUSAL_TXS, written by tests/devnet.rs on the devnet and by the demo run on mainnet. They
- * are only pointers: everything the band shows is read back from chain by hash.
+ * VITE_REFUSAL_TXS, written by tests/devnet.rs and `scripts/run.mjs room` (ids: lib/room.json).
+ * They are only pointers: everything the band shows is read back from chain by hash.
  */
-export const recorded: Partial<Record<RefusalId, { signer: string; hash: string }>> = Object.fromEntries(
+export const recorded: Partial<Record<string, { signer: string; hash: string }>> = Object.fromEntries(
   ((import.meta.env.VITE_REFUSAL_TXS as string | undefined) ?? "")
     .split(",")
     .map((entry) => entry.trim().split(":"))
@@ -52,6 +52,13 @@ function json(text: string): unknown {
 }
 
 const fromBase64 = (base64: string) => new TextDecoder().decode(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)));
+
+/** How one recorded attempt ended, from its receipts alone: the contract's refusal, if any, and whether anything failed. */
+export async function readOutcome(hash: string, signer: string): Promise<{ err: string | null; failed: boolean }> {
+  const tx = await rpc<TxResult>("tx", { tx_hash: hash, sender_account_id: signer, wait_until: "NONE" }, config.archivalRpcUrl);
+  const failed = tx.receipts_outcome.filter((r) => typeof r.outcome.status === "object" && r.outcome.status !== null && "Failure" in r.outcome.status);
+  return { err: JSON.stringify(failed).match(/ERR_[A-Z_]+/)?.[0] ?? null, failed: failed.length > 0 };
+}
 
 /**
  * A refused transaction read back from chain by its hash: who sent what, the contract's refusal

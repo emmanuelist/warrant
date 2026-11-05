@@ -9,6 +9,7 @@ import { settleHash } from "../lib/route";
 import type { SheetRequest } from "./ActionSheet";
 import { Lever } from "./Lever";
 import { Out, Wrap } from "./parts";
+import { RefusalRoom } from "./RefusalRoom";
 
 interface Refusal {
   id: RefusalId;
@@ -151,6 +152,8 @@ export function Refusals({ board, nowMs, viewer, onSheet }: { board: Board; nowM
             <RefusalCard key={refusal.id} refusal={refusal} index={index} round={round} tokens={board.tokens} />
           ))}
         </ol>
+
+        <RefusalRoom />
       </Wrap>
     </section>
   );

@@ -162,6 +162,8 @@ Verified facts about everything this project depends on. Each entry says how it 
 
 - **A component-layer `display: none` loses to a display utility on the same element** (again, 2026-10-21): the phone's backing list kept Tailwind's `flex`. Toggle display with responsive utilities (`hidden lg:flex`) on elements that carry one.
 
+**A view call can't reach a contract's refusal (2026-11-05).** `query call_function` does run a change method, but it can't attach a deposit, so `wrap.near.near_withdraw` and `intents.near.mt_transfer` both stop at "Requires attached deposit of exactly 1 yoctoNEAR". There is no `eth_call` equivalent for our 1-yocto methods, so the refusal room sends real transactions.
+
 **Devnet signer (D-017)**
 - Every devnet account shares the sandbox genesis key (`near_sandbox::config::DEFAULT_GENESIS_ACCOUNT_PRIVATE_KEY`, public key `ed25519:5BGSaf6YjVm7565VzWQHNxoyEjwr3jUpRJSGjREvU9dB`). `tests/devnet.rs` writes it to `web/.env.development.local`.
 - WebCrypto imports an Ed25519 secret only as PKCS#8: the 16-byte RFC 8410 header `302e020100300506032b657004220420` + the 32-byte seed (the first half of NEAR's 64-byte secret).
@@ -186,7 +188,7 @@ Verified facts about everything this project depends on. Each entry says how it 
 | `VITE_SITE_URL` | Deployed origin; when set at build time, `og:url`/`og:image` become absolute (D-019) | The host, at deploy (#13) |
 | `VITE_WRAP_CONTRACT` | wNEAR contract for the web app (default `wrap.near`; the devnet writes `wrap.sandbox`) | This file, "Contracts we call" |
 | `VITE_SANDBOX_SIGNER_KEY` | Devnet only: the sandbox's public genesis key (D-017) | Written by `tests/devnet.rs` |
-| `VITE_REFUSAL_TXS` | The refusals band's recorded refused transactions, `id:signer:hash,…` for `reclaim-early`, `exercise-expired`, `exercise-unheld` (D-027) | Written by `tests/devnet.rs`; on mainnet, by the demo run (#10) |
+| `VITE_REFUSAL_TXS` | The refusals band's recorded transactions, `id:signer:hash,…`, with ids from `web/src/lib/room.json` (D-027, D-037) | The devnet seeds three in `tests/devnet.rs`; `node scripts/run.mjs [--devnet] room` writes all 30 to the web env file |
 | `VITE_ARCHIVAL_RPC_URL` | Archival RPC for reading old transactions (default on mainnet `https://archival-rpc.mainnet.fastnear.com`; the devnet uses its own RPC) | This file, "Reading transactions back" |
 | `VITE_REPO_URL` | Public repository, linked from the footer when set | GitHub, at #6/#13 |
 | `VITE_DEVNET_ACCOUNTS` | Devnet only: the seeded accounts to act as, holders included (`alice.sandbox,bob.sandbox,carol.sandbox`), offered by the header and by sheets with no one to send them (D-028) | Written by `tests/devnet.rs` |

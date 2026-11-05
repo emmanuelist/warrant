@@ -29,6 +29,7 @@ Append-only proof log. Every claim in the README, demo or submission points to a
 | E-024 | 2026-11-05 | The deploy is rehearsed and the host checked, with nothing deployed and nothing spent. A fresh clone passes the CI steps. `scripts/run.mjs` runs allow, fund, share, write and three real refusals on the devnet, and both refused exercises refund in full. Its NEP-413 signature over a live 1Click intent passes signature checks in mainnet `simulate_intents`, and a well-formed wrong signature is refused for its signature. The relayer as `vercel build` emits it relays EVM-signed intents end to end on the devnet, after a fix for an import crash that would have hit production. The README's steps were walked in a browser. | Output below | `10-mainnet-runbook` |
 | E-025 | 2026-11-05 | The history split by area is the same work, checked commit by commit. Its tree equals the old single commit except for one reworded line in D-034. The contract commit passes fmt, clippy, the wasm build and 71 unit tests. The web layer passes lint and typecheck and fails `vite build` only for want of `index.html`, as its message says. The web app commit passes lint, typecheck and build. A fresh clone at the tip passes every CI step. A reproducible Docker build works on this machine and embeds its commit; its `code_hash` has not yet been compared across two builds. | Output below | `10-mainnet-runbook` |
 | E-026 | 2026-11-05 | The contract build reproduces: two Docker builds of pushed commit `1ffcc9f` are byte-identical, 323,125 bytes, `code_hash CPKpW1fWrJmpWXLudZP4yuYxHy9Y36tfzwqgs6zuMTng`, and the wasm names that commit. The private repo exists, with 22 issues numbered as the docs cite them. | Output below | `1ffcc9f` |
+| E-027 | 2026-11-05 | The refusal room works on the devnet against byte-identical Intents and wNEAR. `scripts/run.mjs room` sent 27 attempts that reached all 25 refusals the contract names, plus 3 honest calls that went through. Refused attempts moved no money. The app reads all 30 back from chain: 27 refused by name, 3 went through, 0 off their rule. A wrong transaction shows as off its rule, a hash that doesn't exist as unread, and an unrecorded network says so. No overflow at 390 or 1440, 0 axe violations, 0 detector anti-patterns. **Mainnet: not yet sent.** | Output below | `20-refusal-room` |
 
 ## E-001 output
 ~~~text
@@ -782,3 +783,47 @@ gh repo view emmanuelist/warrant   PRIVATE, default branch main, created by the 
 gh issue list --state all          #1 to #22, numbers as docs/ISSUES.md had them; 8 closed with evidence
 ~~~
 
+## E-027 output
+~~~
+node scripts/run.mjs --devnet write && node scripts/run.mjs --devnet room
+buy-overflow           ERR_OVERFLOW                   Ba6cL3q5K886vrt5DwJHdpuTcex8aESg6nKdwrZqx6zD
+reclaim-early          ERR_NOT_EXPIRED                9ydMcTtxL2wn26itZw2JiJTxyPwrhjoFF1uXwW2fZfzy
+reclaim-stranger       ERR_NOT_WRITER                 GCCj2SMBhnKnuNVFa22ukcp2TLr1k4qSMWPpKdTjffpB
+close-unheld           ERR_INSUFFICIENT_LONGS         EqHBVNeGFxqFkWZQrGoM3kqDYW1M3Huc7jVFCiT2khRV
+forge-deposit          ERR_NOT_INTENTS                6DQScMb8Ccnj5ACiAXANYsShMdNYMifkUPA3LHV5y2TB
+forge-signature        ERR_NOT_INTENTS                GfW6zgtSYv5rheB95fJNUYxXSwnU6qEogWnGzNAiA8oz
+allow-stranger         ERR_NOT_OWNER                  61gWVYeqqmgVoNuySF1zeSayKA18KynqbLTfTN2s3qZF
+cancel-stranger        ERR_NOT_SELLER                 7vAHyTw7Bh1QnP2kdkZKcaVYS6m2KKNQ9ZDsTfkgrdxV
+exercise-unheld        ERR_INSUFFICIENT_LONGS         3LDDgfx7eCvCxARnBWeZDTB7BZZdPEPPhkigiTZB2PRn
+exercise-underpaid     ERR_INSUFFICIENT_PAYMENT       48ncAhdXVV8mMdSM5ASuEK6mBBHJwmhwGU87276tTiZi
+exercise-wrong-token   ERR_WRONG_TOKEN                A2dt2vRmxZejcxmW7x8HVMYShJrpc4gNjPXymrDgcZvC
+exercise-unknown       ERR_UNKNOWN_SERIES             638aDKLgBkn69iv4rB1PvWDxr8vL67Ao18Xpcx7J1GbV
+exercise-zero          ERR_ZERO                       FVMXugMSyHFEW11Ykush5yFau7968pJLPVnHnAN94cQE
+buy-too-many           ERR_OFFER_AMOUNT               6BT3stLhFQsuKzgvKRTZBEecJxoXeBt9w5EWWMTi5cy
+buy-unknown            ERR_UNKNOWN_OFFER              7qDyNkCkkR3opkwfjAH5y6PfjFQyR8bJxhYcosRTbQWG
+create-below-min       ERR_BELOW_MIN                  GajfN1BdZMB6FwW1Q4QryzeaNjHdVxnMqCE6MCqoJRDJ
+create-bad-expiry      ERR_BAD_EXPIRY                 Crz2uhbv5WrkkFNzQyMgD1DxC3erL4xdkhhCxwt8nvzd
+create-unlisted        ERR_TOKEN_NOT_ALLOWED          Fig4Cd6tGHxzHtG7deuAhDEU6xkGgnqnoE1rXN8yBYJ6
+create-same            ERR_SAME_TOKEN                 GXLz8WkTYJWRxX3akz9Mp8SJbX7fYHfCYQqzpWfXStvZ
+bad-msg                ERR_BAD_MSG                    ESRY4jepMUjxry5HCMhXEaePsun97nUfbi8BcyHZ67Xt
+batch                  ERR_BATCH_NOT_SUPPORTED        7NSkX8m1SqQiJg225QLvuPvCeT8m96HWk8JnducvxoJE
+transfer-self          ERR_SELF_TRANSFER              AYE8baNaPdzRT8uRnPSyD7qD2gQkjKar5gnKD6r5gqt1
+transfer-approval      ERR_APPROVALS_NOT_SUPPORTED    CLE3XKoSMGyVHpeWcyXzn1phoSbBxAEtEcdBpMb4z5Uv
+batch-mismatch         ERR_LENGTH_MISMATCH            DXacSVVgmJ1rtVXhqXdkZAhjETTJJGnSxb8oX3buwCV5
+retry-nothing          ERR_NOTHING_TO_PAY             3h5V4W7qLktNAvnfkcWVCxRGRRNQDyvwZUr5F17kpuAM
+every refused attempt so far refunded in full, the contract's balances unchanged
+honest-buy             went through                   GyJm1EfgryKBmpBMVsLceBeY63mM2WibDvTFEjXK7Nwb
+honest-exercise        went through                   GaCsF3obM1D8ioDxkt6zMy4PghpzmCfN6ukCivjCQDJ6
+exercise-expired       ERR_EXPIRED                    ui5kGr4GPyNtwiwuSxQYJBZgP1RPoyAaQtNbygnTRoc
+honest-reclaim         went through                   HZfjeV5j5HGV6HB9FXGcTCiRgKEVHC4mmrhGhb5wPNdd
+reclaim-twice          ERR_ALREADY_RECLAIMED          4crfuctV9yNAMu1Hin9V653NGvwaLVEtRq7oaPZVaW12
+30 attempts ended as room.json says
+
+Playwright, /?as=alice.sandbox#refusal-room
+1440   tally refused 27 · honest 3 · off 0 · unread 0 · 25 distinct codes · 3 columns · no overflow · 0 console errors
+390    the same tally · 1 column · no element past the viewport · axe on #refusals: 0 violations
+Off-rule test (a row pointed at the honest buy's hash):  "went through, expected ERR_NOT_EXPIRED" · "1 off their rule"
+Unknown hash test:                                       "couldn't read it just now" · "1 couldn't be read just now"
+Nothing recorded:                                        every row "not recorded yet", the read button disabled, the intro says so
+impeccable detect: 0 anti-patterns; advisories are the dial's known layering false positives, nested cards and stripes
+~~~
