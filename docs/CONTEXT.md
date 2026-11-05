@@ -173,6 +173,8 @@ Verified facts about everything this project depends on. Each entry says how it 
 
 **Reading how much state an account holds (2026-11-05).** `view_account.storage_usage` minus the length of `view_code` is what counts toward the 10 KB deletion limit. The account itself is 100 bytes of it, and each state entry costs its key, its value and 40 bytes. `view_state` with an empty prefix lists the entries (E-035).
 
+**Deleting an implicit account's key doesn't revoke it on Intents (2026-11-05).** `intents.near` keeps its own key list and trusts an implicit account's original key until `remove_public_key`, whatever the account's access keys say (`contracts/defuse/src/contract/accounts/account/mod.rs`). To replace an exposed key, do both: `AddKey` and `DeleteKey` on the account, `add_public_key` and `remove_public_key` on Intents, each attaching 1 yocto. `has_public_key` and `public_keys_of` show the result (E-036). `near ... sign-with-access-key-file` needs only `public_key` and `private_key` in the file.
+
 **A view call can't reach a contract's refusal (2026-11-05).** `query call_function` does run a change method, but it can't attach a deposit, so `wrap.near.near_withdraw` and `intents.near.mt_transfer` both stop at "Requires attached deposit of exactly 1 yoctoNEAR". There is no `eth_call` equivalent for our 1-yocto methods, so the refusal room sends real transactions.
 
 **Devnet signer (D-017)**
