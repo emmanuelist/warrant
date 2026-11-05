@@ -1,17 +1,27 @@
 # State
-_Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) · git: local commits only, no remote yet (#6)_
+_Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) · repo: private `emmanuelist/warrant`, public on 2026-11-13_
 
 **Name:** Warrant (D-014). **Thesis:** Options that can't default and need no oracle: the collateral is locked inside NEAR Intents until expiry.
 **Milestone:** M1, due 2026-11-05 23:59 UTC · **Deadline:** 2026-11-14 23:59 UTC · 9 days left on 2026-11-05
-**Next action:** the first mainnet deploy (#10) as soon as #1 is funded, using the runbook in `scripts/`. Then the deployed page and the three recorded refusals, then the first real 1Click payout to Base (#11).
+**Next action:** the first mainnet deploy (#10) as soon as #1 is funded, in this order:
+1. `cargo near build reproducible-wasm` in `contracts/options`, from a clean commit that will be pushed and tagged, not squashed (its SHA is what NEP-330 names).
+2. `scripts/mainnet-deploy.sh contract`, then `holder` and `relayer`. Then `node scripts/run.mjs` with `allow`, `fund 0.85`, `swap 0.3`, `share 0.5`, `write`, `refusals`.
+3. Add the printed `VITE_REFUSAL_TXS` to `web/.env.production`, then host the page and relayer (`scripts/mainnet-deploy.sh host`) and send one real transaction from the page.
+4. The first real 1Click payout to Base (#11).
+
+Claude provides the wallet and records the video. The user only funds, posts on X and confirms the payload (D-036). The demo winds down from 2026-11-26 (#25). What the proof has to beat: D-037 (#11, #18, #20, #21, #22).
 **Blocked on (all the user's):**
-1. **#1:** 5 NEAR to `d0482bffd77daa246ff50cd36cd8c8392548a0cf0fc7d6ccd887a3675f084148`. Blocks M1. The account is still `UNKNOWN_ACCOUNT`.
-2. **#6:** permission to create the private repo and push. The harness's permission layer refused `gh repo create --private` + `git push` as an upload, so nothing has left this machine. CI, also part of M1, can't run until this lands.
-3. **#10:** where the web app and relayer are hosted. Recommendation: Vercel, already logged in as `emmanuelist`.
+1. **#24:** 5 NEAR to `d0482bffd77daa246ff50cd36cd8c8392548a0cf0fc7d6ccd887a3675f084148`, on the NEAR Protocol network. Blocks M1. The account is still `UNKNOWN_ACCOUNT`. A background check watches for it.
+2. **#23 needs merging, as a merge commit:** the permission layer refuses a merge without review. CI, part of M1, hasn't run yet; it should start once `ci.yml` reaches `main`.
+3. **Narration:** an ElevenLabs key, kept out of this repo (D-037).
+
+The web app and relayer go on Vercel (the user agreed, 2026-11-05). Deploy from `1ffcc9f`'s reproducible build, or rebuild from a later commit: `target/near/options.wasm` is overwritten by any plain `cargo near build`.
 
 ## Works (verified this session)
 | Capability | Verified by | Evidence |
 |---|---|---|
+| The history split by area, each commit checked, a fresh clone green; two reproducible Docker builds byte-identical (2026-11-05) | Gate per commit, `cargo near build reproducible-wasm` | E-025, E-026 |
+| The deploy rehearsed, nothing spent (2026-11-05): a fresh clone passes the CI steps; every `scripts/run.mjs` step runs on the devnet with real refusals refunded in full; a NEP-413 signature over a live 1Click intent passes mainnet `simulate_intents`; the relayer as `vercel build` emits it passes the relay check on the devnet; the README's steps work in a browser | `scripts/run.mjs`, `swap-check`, `web/scripts/relay-check.mjs`, Playwright | E-024 |
 | Rules re-read: Q-001 counts code from 2026-10-19 (D-034). Live `intents.near` and `wrap.near` still match the pinned hashes, and Intents reports nothing paused (2026-11-05) | curl, RPC | E-023 |
 | Options contract: fmt + clippy `-D warnings`, 71 unit tests, sandbox suites `sandbox` + `signers`; 323.0 KB wasm with `on_auth` (2026-11-05) | Gate | E-004, E-013, E-017, E-023 |
 | Wallets with no NEAR account (D-030), 2026-10-26. In the sandbox: a `0x` key writes, lists, cancels, moves a long into Intents, claims, is refused an early reclaim, and reclaims after expiry, through relayed `erc191` intents. The relayer refuses anything but Warrant actions. Through the UI on the devnet, as `0x17c5…d025`: cancel, buy, exercise and a refused early reclaim, each read back from chain. The connect menu, sheet gate and ERC-191 review show no overflow at 320–1440 and 0 axe violations | `cargo test --test signers`, `node web/scripts/relay-check.mjs`, Playwright | E-016, E-017, E-018, E-019 |
@@ -31,17 +41,19 @@ _Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) ·
 |---|---|---|---|
 | Nothing on mainnet. Owner `d0482bff…4148` is unfunded and contract account `warrant-options.near` doesn't exist yet (D-035). | mainnet | `UNKNOWN_ACCOUNT` for both | 2026-11-05 |
 | Nothing hosted. | | | 2026-11-05 |
+| Local key files only, unfunded: holder `e96016e5…da50`, relayer `f6464d4e…90ec` (`~/.near-credentials/warrant-*`) | mainnet | `UNKNOWN_ACCOUNT` | 2026-11-05 |
 
 ## Broken or unverified
 - Mainnet signing through near-connect (`signAndSendTransaction(s)`, `signMessage`) is unexercised: only mainnet has wallets (#10).
-- 1Click: a valid `submit-intent` (NEP-413 or ERC-191), a delivered payout to Base, and a real deposit from another chain (#11, after #10). 1Click doesn't check ERC-191 signatures at submit (E-019); the UI simulates first.
+- 1Click: a `submit-intent` that moves funds (NEP-413 or ERC-191; the NEP-413 signature itself passes `simulate_intents`, E-024), a delivered payout to Base, and a real deposit from another chain (#11, after #10). 1Click doesn't check ERC-191 signatures at submit (E-019); the UI simulates first.
 - A real EVM wallet's prompt (MetaMask shows the ERC-191 JSON as text) and the relayer on mainnet with a function-call key: unexercised until #10. Solana and passkey signers are not built (D-030).
 - The `retry_payout` UI path: needs a failed payout to appear; the contract path is unit-tested (E-004).
 - The refusals band on mainnet: no recorded hashes until #10; its cards say so until then. The archival read path is verified by curl, not yet through a mainnet build.
 - The exercise net (1Click reference price) runs only on mainnet: the devnet has no price, so that path is unverified until a mainnet build (#10).
+- `scripts/mainnet-deploy.sh`: its near CLI chains are checked with `--help` at every level but never sent (no funds). The hosted function has run only locally, as `vercel build` emits it.
 - What a full storage balance blocks beyond new writes (D-035).
 - Design debt (P3): material colours are literal oklch values; the route's stations trip the detector's nested-cards rule (deliberate, inside the control well); no sorting, search or batch claims on the board (the critique's Flexibility 2/4).
 
 ## Open questions
 - Can one project place in several tracks? (user → NEAR Discord or Telegram, #3). The page only confirms multi-track tagging.
-- Lock the contract account before submission? It costs about 3.3 NEAR of stake that never comes back and makes "can't default" checkable in one command (D-035, #18). I recommend yes; the user decides at M3.
+- Lock the contract account before submission? It keeps about 3.4 NEAR for good (D-036), and it makes "can't default" checkable in one command (D-035, #18). I recommend yes; the user decides at M3.

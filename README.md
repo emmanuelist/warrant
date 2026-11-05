@@ -49,7 +49,7 @@ npm run dev
 
 Open `http://localhost:5173/?as=alice.sandbox` and you see the Lock Dial and a board of series, every figure read from the local chain. The devnet signs as any seeded account, so `/?as=bob.sandbox` shows a holder's view and `/account?as=bob.sandbox` shows their positions.
 
-**3. Try to break the lock.** Scroll to the refusals band and use "Send one yourself". The transaction is really sent, the contract refuses it, and the card shows the `ERR_*` code read back from chain by its hash.
+**3. Try to break the lock.** Choose "Refusals" in the header, press "Send one yourself", then "Test the lock". The transaction is really sent and the contract refuses it. You see "Refused by chain", `ERR_NOT_EXPIRED` and the transaction hash.
 
 ## How it works
 

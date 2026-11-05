@@ -11,7 +11,7 @@ Research and strategy are in `internal/research/DOSSIER.md` (gitignored). Read i
 contracts/options/   near-sdk-rs options contract + sandbox tests
 web/                 frontend (Vite + React + TS) and the relayer (web/relay, web/api)
 scripts/             ops scripts: deploy, demo runs, measurements
-docs/                STATE, PLAN, DECISIONS, EVIDENCE, CONTEXT, ISSUES, SPEC, DESIGN
+docs/                STATE, PLAN, DECISIONS, EVIDENCE, CONTEXT, SPEC, DESIGN
 internal/            dossier, raw captures, spikes: gitignored, never commit
 ```
 
@@ -36,7 +36,7 @@ internal/            dossier, raw captures, spikes: gitignored, never commit
 5. **Tests cover the failure paths**, not just the happy path: early reclaim refused, unauthorized exercise refused, late exercise refused, double exercise refused, wrong-token deposit refunded.
 6. **No secrets in the repo.** Keys stay in `~/.near-credentials/`. `.env.example` lists names only. Never print a private key or seed phrase.
 7. **No silent scope cuts.** Every cut is a DECISIONS entry with its technical reason.
-8. **Mainnet spend (D-004):** mainnet only for the Intents path, with demo trades ≤ $2 each. Ask the user before any single spend above $5 or anything touching their personal wallet.
+8. **Mainnet spend (D-004):** mainnet only for the Intents path, with demo trades ≤ $2 each. Ask the user before any single spend above $5 or anything touching their personal wallet. Claude's own dedicated account signs the demo, so no step needs theirs (D-036).
 9. **Outward-facing actions belong to the user.** Claude drafts the X post (it must tag `@NEARProtocol` and `#NEARHackathon`) and the submission payload. The user publishes the post and confirms the exact payload before `POST /api/applications`. A mistake in a saved submission goes through https://nearhackathon.com/request-changes, never a second submission.
 10. **Build window (D-034):** the organizers count code from the announcement on 2026-10-19 (Q-001), and this project starts 2026-10-20. Say so plainly; never claim or imply the code post-dates 2026-11-01. Spike code stays in `internal/spikes/`.
 
@@ -67,7 +67,7 @@ Local UI against real chain state: `cargo test --test devnet -- --ignored --noca
 | Concern | File |
 |---|---|
 | Milestones and exit criteria | docs/PLAN.md (GitHub milestones mirror it once the remote exists) |
-| Work items | docs/ISSUES.md until the GitHub remote exists, then GitHub issues (`gh issue list --milestone "<current>"`) |
+| Work items | GitHub issues (`gh issue list --repo emmanuelist/warrant --milestone "<current>"`) |
 | Why we chose what we chose | docs/DECISIONS.md (append-only) |
 | Proof that things work | docs/EVIDENCE.md (append-only) |
 | Verified facts about dependencies, and traps | docs/CONTEXT.md. Read it before touching any integration. |
@@ -76,6 +76,6 @@ Local UI against real chain state: `cargo test --test devnet -- --ignored --noca
 ## Operating protocol
 - **Start:** read the open issues for the current milestone and the last 3 entries of docs/DECISIONS.md. Say the next action back before starting.
 - **Work:** one issue at a time, on a branch `<issue>-<slug>`. Each PR says `Closes #<n>` and carries its evidence.
-- **Finish** (or `/foundation handoff`): append EVIDENCE and DECISIONS, update CONTEXT with anything verified, close issues with evidence links, rewrite docs/STATE.md, commit (from 2026-11-01).
+- **Finish** (or `/foundation handoff`): append EVIDENCE and DECISIONS, update CONTEXT with anything verified, close issues with evidence links, rewrite docs/STATE.md, commit.
 - **Truth rule:** never write a claim into STATE, README, an issue or a PR that wasn't verified this session. Write "unverified" instead.
 - **Decisions:** never relitigate an accepted decision without new evidence. Supersede it with a new entry.

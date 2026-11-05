@@ -26,6 +26,9 @@ Append-only proof log. Every claim in the README, demo or submission points to a
 | E-021 | 2026-10-26 | The Lock Dial's heat-blued centre fits and reads at every width (D-033). Every glyph of the readout is inside the blue: margins 3.1 / 14.3 / 16.9 / 4.2 / 11.0 / 41.1 / 3.3 / 3.3px at 320 / 360 / 375 / 390 / 414 / 768 / 1024 / 1440. The scale labels clear the disc by 4.3px or more at 1440 and 2.0px or more at 390. The story's centre clears to lacquer when its lock opens (opacity 0). axe reports 0 violations on the hero and board at 1440 and 390, the console has 0 errors, and the detector finds 0 anti-patterns (its dial-text advisory is a layering false positive, shown below). Iron move chips are outlined. `public/og.png` is re-rendered. The gate is green. | Playwright, axe-core 4.10.2, impeccable detect; output below | pre-commit (D-011) |
 | E-022 | 2026-10-27 | The trade card's terms no longer collide on long figures (reported by the user on series #3: "12.345678 tUSDC" ran into "2.50 wNEAR" in 146px columns). Each term is a size container. Both figures share one size fitted to the longer one (14.6px for #3; 22px for short figures and wide cards), and the countdown fits up to "366d 23:59:59". Measured at 1024 / 1280 / 1440 / 1511 / 1920 for series #1 and #3, everything fits. The gate is green and the detector finds 0 anti-patterns. | Playwright measurements; output below | pre-commit (D-011) |
 | E-023 | 2026-11-05 | Ready for the first commit, and nothing on mainnet has moved underneath us. The live `intents.near` and `wrap.near` code hashes still match the pins, Intents reports nothing paused, and the organizers' page now answers the pre-window question (D-034). On the tree to be committed: contract gate green (71 unit with the new double-exercise test, 2 + 1 sandbox), wasm 322,988 bytes, web lint 0 and build green, 0 secret-scan hits in 140 files. | Output below | pre-commit |
+| E-024 | 2026-11-05 | The deploy is rehearsed and the host checked, with nothing deployed and nothing spent. A fresh clone passes the CI steps. `scripts/run.mjs` runs allow, fund, share, write and three real refusals on the devnet, and both refused exercises refund in full. Its NEP-413 signature over a live 1Click intent passes signature checks in mainnet `simulate_intents`, and a well-formed wrong signature is refused for its signature. The relayer as `vercel build` emits it relays EVM-signed intents end to end on the devnet, after a fix for an import crash that would have hit production. The README's steps were walked in a browser. | Output below | `10-mainnet-runbook` |
+| E-025 | 2026-11-05 | The history split by area is the same work, checked commit by commit. Its tree equals the old single commit except for one reworded line in D-034. The contract commit passes fmt, clippy, the wasm build and 71 unit tests. The web layer passes lint and typecheck and fails `vite build` only for want of `index.html`, as its message says. The web app commit passes lint, typecheck and build. A fresh clone at the tip passes every CI step. A reproducible Docker build works on this machine and embeds its commit; its `code_hash` has not yet been compared across two builds. | Output below | `10-mainnet-runbook` |
+| E-026 | 2026-11-05 | The contract build reproduces: two Docker builds of pushed commit `1ffcc9f` are byte-identical, 323,125 bytes, `code_hash CPKpW1fWrJmpWXLudZP4yuYxHy9Y36tfzwqgs6zuMTng`, and the wasm names that commit. The private repo exists, with 22 issues numbered as the docs cite them. | Output below | `1ffcc9f` |
 
 ## E-001 output
 ~~~text
@@ -699,3 +702,83 @@ npm run build                           index.js 409.71 kB, index.css 77.02 kB
 140 files scanned; 0 hits
 ignored as expected: web/.env.development.local internal contracts/options/target web/dist see.md
 ~~~
+
+## E-024 output
+~~~
+# Fresh clone of 6-first-commit, the CI steps in order, no keys
+fmt ok · clippy ok · cargo near build: 322996 bytes
+unit 71 passed · sandbox 2 passed (171 s, bytecode fetched from mainnet, hashes checked) · signers 1 passed
+npm ci · npm run build: index.js 409.71 kB
+
+# node scripts/run.mjs --devnet …, real transactions on the seeded devnet
+allow    allow nep141:wrap.sandbox: 6yMDYdAki4hNV4mikYDsC3LavA1KEezGakVTqCRm6JUe
+fund 1   writer wNEAR inside Intents: 9000000000000000000000000
+share 1  holder USDC inside Intents: 440340000
+write    series 6: 3 longs, 300000000000000000000000 locked, offer of 2
+refusals reclaim-early: ERR_NOT_EXPIRED RpUbtRWQham245feGuzRJc6XjeJR6dPj9AdPsUFE6WW
+         exercise-expired: ERR_EXPIRED 8t2fifgq8u2sYQkmoLzUqvfVtUg8gsXSeXZ6tTjg71sx
+         exercise-unheld: ERR_INSUFFICIENT_LONGS Big8CAiJpkSsBXjVaLKntzdnCaJcLVpEVyHXCMNJ4YCZ
+         both refused exercises refunded in full
+         reclaim series 7: CKDgv7mPnuoPZ4L5Xqoo8zkaVpkTy6hZn9yEnmYDtkxT
+writer wNEAR afterwards: 9.0 − 0.3 (series 6) − 0.1 (series 7) + 0.1 (reclaimed) = 8.7, as read
+
+# node scripts/run.mjs swap-check, on mainnet: a live quote and generate-intent, signed locally, simulated only
+quote: 0.1 wNEAR → 0.400908 USDC
+simulate_intents refused: "insufficient balance or overflow"     (past the signature: the account is unfunded)
+control, a well-formed 64-byte wrong signature:  "invalid signature"
+
+# vercel build --prod (local, uploads nothing): functions/api/relay.func, runtime nodejs24.x
+before the fix: api/relay.js imports "../relay/relay.ts", which isn't in the function
+after rewriteRelativeImportExtensions: "../relay/relay.js", and so on down the tree
+unconfigured host: POST /api/relay → 503 {"error":"The relayer isn't configured on this host."}
+
+# node scripts/relay-check.mjs against the emitted function, serving the devnet
+200 write (transfer + create msg)            series #8, writer 0x17c5185167401ed00cf5f5b2fc97d9bbfdb7d025
+200 list (auth_call -> on_auth)              offer #5
+200 relayed, refused on chain                ERR_NOT_WRITER, wNEAR unchanged
+400 a transfer to another account with a msg · a plain wNEAR transfer out · an auth_call to another contract
+400 another network's verifying_contract · a deadline an hour out
+422 v left at 27/28 · the first write, replayed
+405 GET
+relay check passed
+
+# The README's steps in a browser (Playwright, 1440 × 900)
+/?as=alice.sandbox       board, dial, three recorded refusals; 0 console errors, no overflow
+Send one yourself → Test the lock    "Refused by chain ERR_NOT_EXPIRED · DL1CyiWQ7y…"
+/account?as=bob.sandbox  account page for bob.sandbox, no overflow
+~~~
+
+## E-025 output
+~~~
+git diff 812187a (old single commit) 397038e (split tip), and 6d21b4d 706778b (old and new tips)
+ docs/DECISIONS.md | 2 +-     (D-034's consequence line, in both)
+
+8462073 feat(contract)    fmt 0 · clippy --all-targets 0 · wasm build 0 · cargo test --lib 0, 71 passed
+6db5192 feat(web) layer   npm ci 0 · lint 0 · typecheck 0 · vite build 1, "Cannot resolve entry module index.html"
+37e1f46 feat(web) app     lint 0 · typecheck 0 · build 0
+52d7dd9 test(contract)    contracts/ identical to the tip, so the fresh clone's run below covers it
+
+Fresh clone of 10-mainnet-runbook at b459a15
+contracts   fmt 0 · clippy --all-targets 0 · wasm build 0 · cargo test -- --test-threads=1 0
+            71 passed · devnet 1 ignored · sandbox 2 passed · signers 1 passed
+web         npm ci 0 · lint 0 · typecheck 0 · build 0
+
+cargo near build reproducible-wasm, at 42a6209 (the commit before the split), 426 s in Docker
+image       sourcescan/cargo-near:0.22.0-rust-1.97.1@sha256:7467038b…2234
+wasm        323125 bytes
+snapshot    git+https://github.com/emmanuelist/warrant?rev=42a6209114aa2ff057e6110051c78d59cefff2d7
+code_hash   BRavJ4DHsU97Zc7vxZk2zEBtJ77wccdBQm1SJH5QQbfL
+~~~
+
+## E-026 output
+~~~
+commit 1ffcc9f1a239463e18fd32eada1ed8a16847410e, cargo near build reproducible-wasm, twice, in Docker
+build 1 exit 0 · 151s   CPKpW1fWrJmpWXLudZP4yuYxHy9Y36tfzwqgs6zuMTng 323125
+build 2 exit 0 · 147s   CPKpW1fWrJmpWXLudZP4yuYxHy9Y36tfzwqgs6zuMTng 323125
+cmp: BYTE-IDENTICAL across two builds
+git+https://github.com/emmanuelist/warrant?rev=1ffcc9f1a239463e18fd32eada1ed8a16847410e
+
+gh repo view emmanuelist/warrant   PRIVATE, default branch main, created by the user 2026-11-05T00:29:18Z
+gh issue list --state all          #1 to #22, numbers as docs/ISSUES.md had them; 8 closed with evidence
+~~~
+
