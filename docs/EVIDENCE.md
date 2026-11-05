@@ -35,6 +35,7 @@ Append-only proof log. Every claim in the README, demo or submission points to a
 | E-030 | 2026-11-05 | The contract with `retire` reproduces and a fresh clone passes. Two Docker builds are byte-identical, 326,736 bytes, `code_hash GGvJPAmHR6RJr5NvN5Au5x16SvWp5ABKshteMfTGo6h`. A clone passes fmt, clippy, the wasm build, 78 unit tests, `sandbox` 3 and `signers` 1, plus web lint, typecheck and build. Those ran at `deaf217`, whose code `git diff` shows is unchanged by the rewrite in D-039. The hash embeds the commit, so mainnet gets its own build. The first CI run on GitHub, on `main`, passed both jobs. | Output below | `18-retire` |
 | E-031 | 2026-11-05 | Warrant is live on mainnet. `warrant-options.near` holds a series with its collateral inside `intents.near`, all 31 refusal-room attempts ended as `room.json` says, 1Click swapped real funds, and a real wallet (Intear, through near-connect) signed a real purchase from the hosted page. The first real runs also found what the devnet couldn't: gas is charged up front, the free node rate-limits an ordinary visit, and the page crashed once a price existed. All three are fixed | [Page](https://warrant-options.vercel.app) · [contract](https://nearblocks.io/address/warrant-options.near) · [wallet-signed buy](https://nearblocks.io/txns/CvMRoftt8jhibE7pchQvZ3JBb9bXnDXUNAkwzonseGPU) · room hashes in `web/.env.production`; output below | f303ca2 |
 | E-032 | 2026-11-05 | A wallet with no NEAR account did the whole round trip on mainnet through the hosted page and relayer: USDC in from Base, bought, exercised, wrote a put, and was paid back on Base. The same `0x` account appears on every leg. The relayer signed with its function-call key and spends about 0.0018 NEAR per action | [Paid on Base](https://basescan.org/tx/0xa3a88f87aa6663d4539a1a7151e93c9ddb441e79279d5096434298d34529f172) · [deposit](https://basescan.org/tx/0xbd6289cc629a617fd25d6f0ecadde052a58421a3eb2d67d8704deb31bb340b1e) · [relayed exercise](https://nearblocks.io/txns/EyQj34zmL54Cm3fCLW8AB6Qf9DFxRMNuRvSdVNRSoNw1); output below | (this branch) |
+| E-033 | 2026-11-05 | A position moved between accounts as an Intents asset on mainnet, signed in a real wallet: from Warrant's ledger into Intents, across to a `0x` account, and back to Warrant's ledger through the relayer. With E-031 and E-032 this meets M1 and M2. `scripts/verify.mjs` checks these claims from a terminal with no key, and a clean clone of `mainnet-v0.1.0` rebuilds to the deployed `code_hash` | [Into Intents](https://nearblocks.io/txns/2nk3oMrDNLYcdQ2WAfRtN6YCeYQV4G3SCYnJ287evCxD) · [to the `0x` account](https://nearblocks.io/txns/2zXKYV6nrKdtjVhg2zid8oEzXcNZRuyqym1QaEZzP1eP) · [back through the relayer](https://nearblocks.io/txns/GZ58bApzGnChGTD1hP7d8mmzsct2PZwAZjPEt89MnWVB); output below | (this branch) |
 
 ## E-001 output
 ~~~text
@@ -991,4 +992,32 @@ One relayed exercise: 0.00175 NEAR burnt. Its 5 receipts of "7.52 Tgas" are refu
    node web/scripts/relay-check.mjs on the devnet: one exercise, a reclaim through on_auth, and two exercises under one signature at 140.
 2. 1Click's status gives explorerUrl "" for every hop, so the timeline's links went nowhere. The page now builds them: BaseScan and NearBlocks above.
 3. Deposit form for an EVM wallet: opens on USDC on Base with the refund address filled in, and pays with one button.
+~~~
+
+## E-033 output
+~~~
+=== a long moved as an Intents asset, through https://warrant-options.vercel.app
+into Intents, Intear prompt "Call 'mt_transfer_call' with 90.0 Tgas" on warrant-options.near
+  2nk3oMrDNLYcdQ2WAfRtN6YCeYQV4G3SCYnJ287evCxD
+to 0x05db...7b0b inside Intents, Intear prompt "Call 'mt_transfer' with 90.0 Tgas" on intents.near
+  2zXKYV6nrKdtjVhg2zid8oEzXcNZRuyqym1QaEZzP1eP
+read back: mt_balance_of nep245:warrant-options.near:1, holder 0, 0x05db... 1
+back to Warrant's ledger, signed ERC-191, relayed (mt_withdraw intent)
+  GZ58bApzGnChGTD1hP7d8mmzsct2PZwAZjPEt89MnWVB
+
+=== node scripts/verify.mjs (16 s, no key)
+PASS contract code, contract source (NEP-330)
+NOTE contract keys: 1 full-access key until the lock
+PASS dependency pins: intents.near, wrap.near
+PASS backed inside Intents: wNEAR holds 0.1, owes 0.1; USDC holds 1.1, owes 1.1
+PASS a live series, refusal room (28 of 28 refused by name, 26 distinct; 3 honest calls)
+PASS wallet-signed purchase, relayer's hosted key, relayed buy, relayed exercise
+PASS paid in from Base, paid out on Base, hosted page, hosted relayer
+Every claim above holds on chain.
+
+=== a clean clone of tag mainnet-v0.1.0
+cargo near build reproducible-wasm, Docker image sourcescan/cargo-near:0.22.0-rust-1.97.1
+Size: 326736 bytes · SHA-256 checksum bs58: DADQfyxqwetsaZBh5n7JEQ8MnwZKQiqzCxaS465svgYz, the deployed code_hash
+Twice in two fresh clones, the first attempt stopped in about 15 s with an SSL error while cargo fetched near/intents
+inside the container ("decryption failed or bad record mac"). Run again in the same clone, it built.
 ~~~

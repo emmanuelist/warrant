@@ -620,3 +620,13 @@ The P2s: the levers and the board contradicted the sheets; lamp colours broke "b
 
 **Consequences:** Before the film and during the judging window, check the key's allowance (`near account list-keys`). Refilling means adding a new key and setting it on the host.
 
+## D-043 · The market-maker agent stays out, though its gate opened · 2026-11-05 · accepted · closes the option in D-006
+**Context:** D-006 brings the market-maker agent back if M2 is met by 2026-11-08. M2 was met on 2026-11-05. The `defi` track names "trading agents", so it would also fit the brief.
+
+**Decision:** Don't build it. An agent with real quotes needs funds to write with, a hot key on a server and a loop that stays up through judging, and a judge gives a project a few minutes. Those minutes go to the film, the README and the checks anyone can run. To keep the board from being empty, the demo writer lists a few offers by hand after the film.
+
+**Alternatives:**
+- Build it for the `agents` tag: that's the most crowded track (dossier), and it would spread the thesis thinner on money the demo doesn't have.
+
+**Consequences:** The board has offers only when someone lists, which the README's Limits say. The contract is open, so anyone can run such an agent against it.
+

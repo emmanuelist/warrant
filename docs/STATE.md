@@ -2,9 +2,9 @@
 _Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) · repo: private `emmanuelist/warrant`, opens when the build is finished (D-039)_
 
 **Name:** Warrant (D-014). **Thesis:** Options that can't default and need no oracle: the collateral is locked inside NEAR Intents until expiry.
-**Milestone:** M1, due 2026-11-05 23:59 UTC · **Deadline:** 2026-11-14 23:59 UTC · 9 days left on 2026-11-05
+**Milestone:** M3, due 2026-11-12 23:59 UTC. M1 and M2 met on 2026-11-05 · **Deadline:** 2026-11-14 23:59 UTC · 9 days left on 2026-11-05
 **Live:** https://warrant-options.vercel.app · contract `warrant-options.near` (E-031)
-**Next action:** the proof surface: the README in the structure D-037 asks for (#13), then the film (#22). Re-scan rivals on 2026-11-07 (#12).
+**Next action:** the film (#22, D-037): port the pipeline from the earlier entries, then shoot on mainnet. Re-scan rivals on 2026-11-07 (#12). After the film, list a few offers so the board isn't empty (D-043).
 
 Claude provides the wallet and records the video. The user only funds, posts on X and confirms the payload (D-036). The demo winds down from 2026-11-26 (#25). What the proof has to beat: D-037 (#18, #22).
 **Blocked on (the user's):** nothing right now. The funding (#24) arrived.
@@ -14,6 +14,7 @@ Vercel hosts the page and relayer. Deploy with `vercel build --prod --yes` and `
 ## Works (verified this session)
 | Capability | Verified by | Evidence |
 |---|---|---|
+| **Anyone can check it (2026-11-05):** `node scripts/verify.mjs` reads the claims off mainnet and Base with no key; a clean clone of `mainnet-v0.1.0` rebuilds to the deployed `code_hash`; a position moved between accounts as an Intents asset | `scripts/verify.mjs`, `cargo near build reproducible-wasm`, the hosted page | E-033 |
 | **The round trip on mainnet (2026-11-05):** a wallet with no NEAR account paid in from Base, bought, exercised, wrote a put and was paid on Base, through the hosted page and relayer, every leg on its own explorer. Signed by a local signer in the browser, not an extension | Hosted page in a scripted browser, Base and NEAR receipts | E-032 |
 | **Live on mainnet (2026-11-05):** the contract with a series and its collateral inside Intents; 31 of 31 refusal-room attempts as `room.json` says, read back by the hosted page; a real 1Click swap; a purchase on the hosted page signed in a real wallet (Intear through near-connect) | `scripts/run.mjs`, RPC read-back, the page itself | E-031 |
 | What only mainnet shows, fixed (2026-11-05): gas is charged up front, so calls ask for 90 TGas and the relayer 70 per intent; four public nodes with failover when one rate-limits; the chart crash once 1Click has a price; a fallback for render errors; 1Click's empty explorer links | Devnet room at 60 TGas, `web/scripts/relay-check.mjs`, Playwright on the production build | E-031, E-032, D-041, D-042 |
@@ -42,9 +43,9 @@ Vercel hosts the page and relayer. Deploy with `vercel build --prod --yes` and `
 |---|---|---|---|
 | Options contract, `code_hash DADQfyxqwetsaZBh5n7JEQ8MnwZKQiqzCxaS465svgYz`, tag `mainnet-v0.1.0`, one full-access key until #18 | mainnet | `warrant-options.near` | 2026-11-05 |
 | Page and relayer | Vercel | https://warrant-options.vercel.app, `/api/relay` | 2026-11-05 |
-| Owner and writer | mainnet | `d0482bff…4148`: about 0.23 NEAR; inside Intents 0.25 wNEAR, about 0.12 USDC, and 0.9 USDC of proceeds to claim | 2026-11-05 |
-| Demo holder (Intear wallet, D-040) | mainnet | `e96016e5…da50`: about 0.13 NEAR; inside Intents 0.10 wNEAR, 0.01 USDC; 1 long | 2026-11-05 |
-| Demo EVM wallet, key in `~/.near-credentials/warrant-evm/` | Base + Intents | `0x05db…7b0b`: 0.30 USDC and gas on Base; inside Intents about 0.03 USDC; wrote series 3 | 2026-11-05 |
+| Owner and writer | mainnet | `d0482bff…4148`: about 0.23 NEAR; inside Intents 0.25 wNEAR, about 0.12 USDC, and 0.9 USDC of proceeds to claim; no longs left | 2026-11-05 |
+| Demo holder (Intear wallet, D-040) | mainnet | `e96016e5…da50`: about 0.13 NEAR; inside Intents 0.10 wNEAR, 0.01 USDC | 2026-11-05 |
+| Demo EVM wallet, key in `~/.near-credentials/warrant-evm/` | Base + Intents | `0x05db…7b0b`: 0.30 USDC and gas on Base; inside Intents about 0.03 USDC; wrote series 3 and holds the last long of series 1 | 2026-11-05 |
 | Relayer, function-call key on `intents.near` / `execute_intents` | mainnet | `f6464d4e…90ec`: about 0.19 NEAR, allowance about 0.145 (D-042) | 2026-11-05 |
 
 ## Broken or unverified
