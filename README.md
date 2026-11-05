@@ -136,6 +136,23 @@ This can't be moved to another chain by swapping an oracle. It leans on what NEA
 
 NEAR technology used: NEAR Intents (`mt_transfer_call`, `mt_transfer`, `execute_intents`, `simulate_intents`, the `transfer`, `auth_call` and `mt_withdraw` intents), the 1Click API, NEP-141, NEP-245, NEP-330, NEP-413, ERC-191 signing on Intents, and near-connect with EIP-6963 for wallets.
 
+It answers the Unstoppable DeFi brief, trading that settles "through NEAR Intents" with "no custodian, nobody to switch it off": the collateral sits inside Intents under a contract account that has no keys.
+
+### Where each NEAR piece is in the code
+
+| NEAR piece | What Warrant does with it | Where |
+|---|---|---|
+| `mt_transfer_call` into `mt_on_transfer` | Writes, purchases and exercises arrive as tokens moved inside Intents. A refused one is refunded by Intents in full | `contracts/options/src/actions.rs`: `impl MultiTokenReceiver`, `on_create`, `on_write`, `on_buy`, `on_exercise` |
+| `mt_transfer` | Every payout. A failed one is owed and can be sent again | `contracts/options/src/payouts.rs`: `ext_mt_core` `mt_transfer`, `on_payout`, `retry_payout` |
+| NEP-245 | A series' longs are a multi-token that moves into Intents and back | `contracts/options/src/positions.rs`: `impl MultiTokenCore`, `impl MultiTokenResolver` |
+| `auth_call` intents | A wallet with no NEAR account acts through a signed intent | `contracts/options/src/auth.rs`: `on_auth`. Built in `web/src/lib/signedIntents.ts` |
+| `simulate_intents`, `execute_intents` | The relayer previews a signed intent, then pays its gas | `web/relay/relay.ts`, served by `web/api/relay.ts` |
+| 1Click | USDC from Base into Intents, and back out to Base | `web/src/lib/oneclick.ts`: `/quote`, `/status`, `/generate-intent` |
+| NEP-413, ERC-191 | NEAR wallets sign 1Click's intents, EVM wallets sign Warrant's | `signIntent` in `web/src/lib/wallet.ts`, `personalSign` in `web/src/lib/evm.ts` |
+| near-connect | NEAR wallets on the page | `web/src/lib/wallet.ts`: `NearConnector` |
+| Views | The board reads series, offers and Intents balances from public nodes | `web/src/lib/chain.ts`, `web/src/lib/nearRpc.ts` |
+| NEP-330 | The source link and build on chain, which SourceScan rebuilt | `[package.metadata.near.reproducible_build]` in `contracts/options/Cargo.toml` |
+
 ## Tests
 
 ```text

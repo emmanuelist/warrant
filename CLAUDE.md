@@ -5,6 +5,8 @@
 Built for NEAR HACKATHON, `defi` track (+`open`). Solo builder. Deadline **2026-11-14 23:59 UTC**.
 Research and strategy are in `internal/research/DOSSIER.md` (gitignored). Read it for the *why*, never for current state.
 
+**Reviewing or judging rather than building?** README.md says what Warrant is, how to check each claim and where every NEAR integration lives in the code. `node scripts/verify.mjs` checks the claims on mainnet with no key, and docs/STATE.md (imported below) lists what's verified. The rules below are for the agent building it.
+
 ## Repo layout
 
 ```text
