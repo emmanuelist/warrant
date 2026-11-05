@@ -22,7 +22,7 @@ HOLDER_DIR="$HOME/.near-credentials/warrant-holder"
 RELAYER_DIR="$HOME/.near-credentials/warrant-relayer"
 # 3.27 NEAR of code stake + 0.23 spare for state, about 23 KB. `retire` returns all of it (D-038).
 CONTRACT_NEAR='3.5 NEAR'
-HOLDER_NEAR='0.1 NEAR'
+HOLDER_NEAR='0.15 NEAR'
 RELAYER_NEAR='0.2 NEAR'
 RELAYER_ALLOWANCE='0.15 NEAR'
 # 2026-11-26 00:00 UTC, the day the demo series expire: the earliest `retire` can run (D-038).

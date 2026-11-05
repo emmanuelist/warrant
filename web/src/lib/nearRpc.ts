@@ -4,7 +4,10 @@
  */
 import { bytesToBase64 } from "./base58.ts";
 
-export class RpcError extends Error {}
+export class RpcError extends Error {
+  /** What the node said beyond the error's name, such as why a transaction is invalid. */
+  detail?: unknown;
+}
 
 interface RpcResponse<T> {
   result?: T;
@@ -20,7 +23,9 @@ export async function rpcAt<T>(url: string, method: string, params: unknown): Pr
   if (!response.ok) throw new RpcError(`RPC ${response.status} from ${url}`);
   const body = (await response.json()) as RpcResponse<T>;
   if (body.error || body.result === undefined) {
-    throw new RpcError(body.error?.cause?.name ?? body.error?.message ?? "RPC returned no result");
+    const error = new RpcError(body.error?.cause?.name ?? body.error?.message ?? "RPC returned no result");
+    error.detail = body.error?.data ?? body.error?.cause?.info;
+    throw error;
   }
   return body.result;
 }

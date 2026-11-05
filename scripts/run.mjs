@@ -29,7 +29,9 @@ if (devnet) args.shift();
 const [command, amountArg] = args;
 
 const TGAS = 10n ** 12n;
-const MAX_GAS = 300n * TGAS;
+// A transaction's gas is charged up front at 0.001 NEAR per TGas and the unused part refunded, so
+// asking for the 300 TGas maximum would need 0.3 NEAR free (docs/CONTEXT.md).
+const CALL_GAS = 90n * TGAS;
 const YOCTO = 1n;
 const NEAR_ONE = 10n ** 24n;
 const USDC_ONE = 10n ** 6n;
@@ -96,7 +98,7 @@ async function chainNowNs() {
   return BigInt(block.header.timestamp_nanosec);
 }
 
-async function send(signer, receiverId, method, callArgs, deposit = YOCTO, gas = MAX_GAS) {
+async function send(signer, receiverId, method, callArgs, deposit = YOCTO, gas = CALL_GAS) {
   return signAndSend(net.rpc, net.key(signer), signer, { receiverId, actions: [{ method, args: callArgs, gas, deposit }] });
 }
 
@@ -210,7 +212,9 @@ const steps = {
       const bounds = await view(net.wrap, "storage_balance_bounds");
       await ok("register on wNEAR", net.writer, net.wrap, "storage_deposit", { account_id: net.writer, registration_only: true }, BigInt(bounds.min), 20n * TGAS);
     }
-    await ok("wrap", net.writer, net.wrap, "near_deposit", {}, amount, 20n * TGAS);
+    // Resumable: a run that stopped after wrapping doesn't wrap again.
+    const wrapped = BigInt(await view(net.wrap, "ft_balance_of", { account_id: net.writer }));
+    if (wrapped < amount) await ok("wrap", net.writer, net.wrap, "near_deposit", {}, amount - wrapped, 20n * TGAS);
     await ok("deposit into Intents", net.writer, net.wrap, "ft_transfer_call", { receiver_id: net.intents, amount: amount.toString(), msg: "" });
     console.log(`writer wNEAR inside Intents: ${await balanceIn(net.writer, wnear)}`);
   },
@@ -288,7 +292,7 @@ const steps = {
     const expected = new Map(catalog.map((entry) => [entry.id, entry.expect]));
     const sent = new Map();
 
-    const attempt = async (id, signer, receiver, method, callArgs, deposit = YOCTO, gas = MAX_GAS) => {
+    const attempt = async (id, signer, receiver, method, callArgs, deposit = YOCTO, gas = CALL_GAS) => {
       if (!expected.has(id)) throw new Error(`${id} isn't in room.json`);
       const want = expected.get(id);
       const outcome = await send(signer, receiver, method, callArgs, deposit, gas);
@@ -460,4 +464,7 @@ if (!step) {
   console.error(`Usage: node scripts/run.mjs [--devnet] ${Object.keys(steps).join("|")}`);
   process.exit(2);
 }
-await step();
+await step().catch((error) => {
+  console.error(`${command} failed: ${error.message}${error.detail ? ` ${JSON.stringify(error.detail)}` : ""}`);
+  process.exit(1);
+});

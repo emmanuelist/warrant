@@ -38,8 +38,9 @@ const TRANSFER_ACTIONS = new Set(["create", "write", "buy", "exercise"]);
 /** `msg` actions Warrant's `on_auth` runs. */
 const AUTH_ACTIONS = new Set(["list", "cancel_offer", "close", "withdraw_proceeds", "reclaim_collateral", "retry_payout", "mt_transfer_call"]);
 const MAX_DEADLINE_MS = 15 * 60_000;
-const MAX_INTENTS = 4;
-const GAS = 300_000_000_000_000n;
+const MAX_INTENTS = 2;
+/** Fits the key's 0.15 NEAR allowance, which has to cover 0.001 NEAR per TGas up front (docs/CONTEXT.md). */
+const GAS = 140_000_000_000_000n;
 /** Per signer, per instance: plenty for a person, too few to drain the gas allowance quickly. */
 const LIMIT = { count: 30, windowMs: 10 * 60_000 };
 
