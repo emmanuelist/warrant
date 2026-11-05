@@ -3,6 +3,7 @@
   { "id": "reclaim-stranger", "family": "The lock", "title": "A stranger takes the collateral", "expect": "ERR_NOT_WRITER" },
   { "id": "close-unheld", "family": "The lock", "title": "The writer closes options they no longer hold", "expect": "ERR_INSUFFICIENT_LONGS" },
   { "id": "reclaim-twice", "family": "The lock", "title": "The writer reclaims the same series twice", "expect": "ERR_ALREADY_RECLAIMED" },
+  { "id": "retire-holding", "family": "The lock", "title": "Retire the contract while it holds collateral", "expect": "ERR_CANNOT_RETIRE" },
 
   { "id": "forge-deposit", "family": "Someone else's name", "title": "A fake deposit, called as if Intents had sent it", "expect": "ERR_NOT_INTENTS" },
   { "id": "forge-signature", "family": "Someone else's name", "title": "Acting for the writer, without Intents checking a signature", "expect": "ERR_NOT_INTENTS" },

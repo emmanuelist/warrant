@@ -13,19 +13,19 @@ Claude provides the wallet and records the video. The user only funds, posts on 
 **Blocked on (all the user's):**
 1. **#24:** 5 NEAR to `d0482bffd77daa246ff50cd36cd8c8392548a0cf0fc7d6ccd887a3675f084148`, on the NEAR Protocol network. Blocks M1. The account is still `UNKNOWN_ACCOUNT`. A background check watches for it.
 2. **#23 needs merging, as a merge commit:** the permission layer refuses a merge without review. CI, part of M1, hasn't run yet; it should start once `ci.yml` reaches `main`.
-3. **Narration:** an ElevenLabs key, kept out of this repo (D-037).
 
-The web app and relayer go on Vercel (the user agreed, 2026-11-05). Deploy from `1ffcc9f`'s reproducible build, or rebuild from a later commit: `target/near/options.wasm` is overwritten by any plain `cargo near build`.
+The web app and relayer go on Vercel, and narration uses an ElevenLabs key read at run time and never copied here (the user agreed to both, 2026-11-05). Deploy only a reproducible build: `target/near/options.wasm` is overwritten by any plain `cargo near build`, and `mainnet-deploy.sh` refuses one without its NEP-330 snapshot.
 
 ## Works (verified this session)
 | Capability | Verified by | Evidence |
 |---|---|---|
-| The history split by area, each commit checked, a fresh clone green; two reproducible Docker builds byte-identical (2026-11-05) | Gate per commit, `cargo near build reproducible-wasm` | E-025, E-026 |
-| Refusal room on the devnet (D-037, 2026-11-05): 27 real attempts reach all 25 named refusals, 3 honest calls go through, refused attempts move no money, and the app reads all 30 back from chain. **Not yet sent on mainnet** | `scripts/run.mjs room`, Playwright, axe-core, impeccable detect | E-027 |
+| The history split by area, each commit checked, a fresh clone green; two reproducible Docker builds of the previous contract byte-identical (2026-11-05) | Gate per commit, `cargo near build reproducible-wasm` | E-025, E-026 |
+| Refusal room on the devnet (D-037, 2026-11-05): 28 real attempts reach all 26 named refusals, 3 honest calls go through, refused attempts move no money, and the app reads all 30 back from chain. **Not yet sent on mainnet** | `scripts/run.mjs room`, Playwright, axe-core, impeccable detect | E-027, E-029 |
 | The deploy rehearsed, nothing spent (2026-11-05): a fresh clone passes the CI steps; every `scripts/run.mjs` step runs on the devnet with real refusals refunded in full; a NEP-413 signature over a live 1Click intent passes mainnet `simulate_intents`; the relayer as `vercel build` emits it passes the relay check on the devnet; the README's steps work in a browser | `scripts/run.mjs`, `swap-check`, `web/scripts/relay-check.mjs`, Playwright | E-024 |
 | Rules re-read: Q-001 counts code from 2026-10-19 (D-034). Live `intents.near` and `wrap.near` still match the pinned hashes, and Intents reports nothing paused (2026-11-05) | curl, RPC | E-023 |
-| Options contract: fmt + clippy `-D warnings`, 72 unit tests, sandbox suites `sandbox` + `signers`; 323.1 KB wasm with `on_auth` (2026-11-05) | Gate | E-004, E-013, E-017, E-023 |
-| Invariants across 32,768 random steps, every action and all 25 refusals reached, the money checked against scheduled transfers; 6 of 6 injected bugs caught (2026-11-05) | `cargo test invariants -- --nocapture` | E-028 |
+| Options contract: fmt + clippy `-D warnings`, 78 unit tests, sandbox suites `sandbox` (3) + `signers` (1); 326.6 KB wasm with `on_auth` and `retire` (2026-11-05) | Gate | E-004, E-013, E-017, E-023 |
+| Invariants across about 32,000 random steps, every action and all 26 refusals reached, the money checked against scheduled transfers, every sequence wound down to nothing; 12 of 12 injected bugs caught (2026-11-05) | `cargo test invariants -- --nocapture` | E-028, E-029 |
+| `retire` returns the deposit and can't touch money (D-038), on the real runtime with over 10 KB of state (2026-11-05). **Not on mainnet** | `cargo test --test sandbox retire` | E-029 |
 | Wallets with no NEAR account (D-030), 2026-10-26. In the sandbox: a `0x` key writes, lists, cancels, moves a long into Intents, claims, is refused an early reclaim, and reclaims after expiry, through relayed `erc191` intents. The relayer refuses anything but Warrant actions. Through the UI on the devnet, as `0x17c5…d025`: cancel, buy, exercise and a refused early reclaim, each read back from chain. The connect menu, sheet gate and ERC-191 review show no overflow at 320–1440 and 0 axe violations | `cargo test --test signers`, `node web/scripts/relay-check.mjs`, Playwright | E-016, E-017, E-018, E-019 |
 | Full lifecycle against byte-identical mainnet Intents + wNEAR (sandbox), 2026-11-05 | `cargo test --test sandbox` | E-005, E-013, E-023 |
 | Every web action sent through the UI on the devnet (2026-10-21 to 26): wrap-and-deposit, withdraw (+unwrap), positions into/out of/inside Intents, exercise, a refused exercise refunded in full, cancel offer, write a series, a Buy from the phone's docked primary key | Playwright + RPC traces | E-007, E-013 |
@@ -58,4 +58,4 @@ The web app and relayer go on Vercel (the user agreed, 2026-11-05). Deploy from 
 
 ## Open questions
 - Can one project place in several tracks? (user → NEAR Discord or Telegram, #3). The page only confirms multi-track tagging.
-- Lock the contract account before submission? It keeps about 3.4 NEAR for good (D-036), and it makes "can't default" checkable in one command (D-035, #18). I recommend yes; the user decides at M3.
+- Lock the contract account before submission? With `retire` it costs only gas, about 4.7 of the 5 NEAR comes back from 2026-11-26, and it makes "can't default" checkable in one command (D-035, D-038, #18). I recommend yes; the user confirms at M3.

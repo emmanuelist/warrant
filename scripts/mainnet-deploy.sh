@@ -6,6 +6,7 @@
 #   scripts/mainnet-deploy.sh holder       funds the holder's gas
 #   scripts/mainnet-deploy.sh relayer      funds the relayer and adds its one-method key
 #   scripts/mainnet-deploy.sh host         gives the linked Vercel project that key
+#   scripts/mainnet-deploy.sh lock         deletes every key on the contract account: cannot be undone (#18)
 #
 # `contract` deploys what `cargo near build reproducible-wasm` built from a clean commit, so
 # NEP-330 metadata names that commit and a rebuild reproduces the on-chain code hash.
@@ -19,11 +20,13 @@ WASM=contracts/options/target/near/options.wasm
 RPC=https://free.rpc.fastnear.com
 HOLDER_DIR="$HOME/.near-credentials/warrant-holder"
 RELAYER_DIR="$HOME/.near-credentials/warrant-relayer"
-# 3.23 NEAR of code stake + 0.27 spare for state, about 26.9 KB (D-037).
+# 3.27 NEAR of code stake + 0.23 spare for state, about 23 KB. `retire` returns all of it (D-038).
 CONTRACT_NEAR='3.5 NEAR'
 HOLDER_NEAR='0.1 NEAR'
 RELAYER_NEAR='0.2 NEAR'
 RELAYER_ALLOWANCE='0.15 NEAR'
+# 2026-11-26 00:00 UTC, the day the demo series expire: the earliest `retire` can run (D-038).
+RETIRE_AFTER_NS=1795651200000000000
 
 exists() {
   curl -s --max-time 20 "$RPC" -H 'content-type: application/json' \
@@ -57,7 +60,7 @@ contract)
       sign-as "$OWNER" network-config mainnet sign-with-access-key-file "$OWNER_KEY" send
   fi
   near contract deploy "$CONTRACT" use-file "$WASM" with-init-call new \
-    json-args "{\"owner_id\":\"$OWNER\",\"intents_id\":\"intents.near\"}" \
+    json-args "{\"owner_id\":\"$OWNER\",\"intents_id\":\"intents.near\",\"retire_after_ns\":\"$RETIRE_AFTER_NS\"}" \
     prepaid-gas '100 Tgas' attached-deposit '0 NEAR' network-config mainnet sign-with-legacy-keychain send
   ;;
 
@@ -89,8 +92,20 @@ host)
     (cd web && vercel env add RELAY_SECRET_KEY production --sensitive)
   ;;
 
+lock)
+  # After this, nobody can change the code. Only the contract's own `retire` returns the deposit.
+  [ "${LOCK_IT:-}" = "yes" ] || { echo "This cannot be undone. Run the last redeploy first, then: LOCK_IT=yes $0 lock" >&2; exit 1; }
+  keys="$(curl -s --max-time 20 "$RPC" -H 'content-type: application/json' \
+    -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"query\",\"params\":{\"request_type\":\"view_access_key_list\",\"finality\":\"final\",\"account_id\":\"$CONTRACT\"}}" |
+    python3 -c 'import json,sys; print(" ".join(k["public_key"] for k in json.load(sys.stdin)["result"]["keys"]))')"
+  for key in $keys; do
+    near account delete-keys "$CONTRACT" public-keys "$key" network-config mainnet sign-with-legacy-keychain send
+  done
+  near account list-keys "$CONTRACT" network-config mainnet now
+  ;;
+
 *)
-  sed -n 2,12p "$0" >&2
+  sed -n 2,13p "$0" >&2
   exit 2
   ;;
 esac

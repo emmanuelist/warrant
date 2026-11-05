@@ -336,6 +336,7 @@ const steps = {
     await attempt("reclaim-early", W, net.options, "reclaim_collateral", { series_id: long.series_id });
     await attempt("reclaim-stranger", H, net.options, "reclaim_collateral", { series_id: long.series_id });
     await attempt("close-unheld", W, net.options, "close", { series_id: long.series_id, amount: "2" });
+    await attempt("retire-holding", H, net.options, "retire", {});
 
     // Not payable, so no deposit: the contract's own check is what refuses it.
     await attempt("forge-deposit", H, net.options, "mt_on_transfer", { sender_id: H, previous_owner_ids: [H], token_ids: [wnear], amounts: [NEAR_ONE.toString()], msg: JSON.stringify(createMsg(PER_OPTION, STRIKE, DEMO_EXPIRY_NS)) }, 0n);

@@ -1773,6 +1773,11 @@ li {
 
   /* ---------- The refusal room (RefusalRoom.tsx) ---------- */
 
+  .room-layout {
+    display: grid;
+    column-gap: 3.5rem;
+  }
+
   .room-families {
     columns: 1;
     column-gap: 3.5rem;
@@ -1784,10 +1789,22 @@ li {
     }
   }
 
+  /* What's refused on the left; beside it, staying in view, what's allowed. */
   @media (min-width: 80rem) {
-    .room-families {
-      columns: 3;
+    .room-layout {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
     }
+
+    .room-rail {
+      position: sticky;
+      top: 5rem;
+      align-self: start;
+    }
+  }
+
+  .room-note {
+    padding-top: 0.75rem;
+    border-top: 1px solid color-mix(in oklch, var(--color-panel-line) 55%, transparent);
   }
 
   .room-family {

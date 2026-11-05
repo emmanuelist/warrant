@@ -27,6 +27,7 @@ pub const ERR_OFFER_AMOUNT: &str = "ERR_OFFER_AMOUNT";
 pub const ERR_NOTHING_TO_PAY: &str = "ERR_NOTHING_TO_PAY";
 pub const ERR_NOT_OWNER: &str = "ERR_NOT_OWNER";
 pub const ERR_OVERFLOW: &str = "ERR_OVERFLOW";
+pub const ERR_CANNOT_RETIRE: &str = "ERR_CANNOT_RETIRE";
 // NEP-245 surface of the position token.
 pub const ERR_APPROVALS_NOT_SUPPORTED: &str = "ERR_APPROVALS_NOT_SUPPORTED";
 pub const ERR_SELF_TRANSFER: &str = "ERR_SELF_TRANSFER";
@@ -221,4 +222,7 @@ pub struct ConfigView {
     pub owner_id: AccountId,
     pub intents_id: AccountId,
     pub allowed_tokens: Vec<AllowedToken>,
+    pub retire_after_ns: U64,
+    pub owed_entries: U64,
+    pub payouts_in_flight: U64,
 }

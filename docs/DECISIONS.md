@@ -553,3 +553,24 @@ The P2s: the levers and the board contradicted the sheets; lamp colours broke "b
 - The contract account starts with 3.5 NEAR, not 3.7. That leaves about 26.9 KB of state beyond the code, against about 3.5 KB for 5 series and 3 offers on the devnet, and pays for the round trip inside the 5 NEAR.
 - Narration uses ElevenLabs, with a key that stays out of this repo. macOS `say` proves the pipeline without one.
 
+## D-038 · The contract can retire itself, so locking it costs almost nothing · 2026-11-05 · accepted · supersedes the lock's cost in D-035 and D-036
+**Context:** D-035 planned to delete every key on the contract account, which D-036 estimated would keep about 3.4 NEAR forever. That is most of the demo's budget, gone however the entry does. An account with no keys can only get its deposit back through its own code. Nothing is deployed yet, so the code can still change.
+
+**Decision:** Add `retire()` (docs/SPEC.md, "Retiring"), then lock as planned.
+- **When:** anyone, from `retire_after_ns`, set at init to 2026-11-26 00:00 UTC, the day the demo series expire. Until then nobody can remove the contract, whatever it holds.
+- **Only when it can't cost anyone anything:** every series has paid out its collateral and proceeds, and no payout is owed or in flight. Otherwise it refuses with `ERR_CANNOT_RETIRE`.
+- **What it does:** moves no tokens, clears its series, offers and allowlist, and deletes the account in the owner's favour.
+- **The result:** the key list stays the proof that nobody can change the code, and the deposit comes back. About 4.7 of the 5 NEAR budget returns: gas, swap spreads and the small Base payout are the loss. Locking (#18) now costs only gas. I recommend it, and the user still confirms it at M3.
+- **Said out loud:** the app, the README and the SPEC all describe `retire`, so a judge reads about it rather than finds it.
+
+**Alternatives:**
+- The plain lock: the strongest reading of "nobody to switch it off", but it gives up most of the demo's budget.
+- No lock: free, but a key holder could deploy new code and take the collateral, which is what the thesis says can't happen.
+- `retire` for the owner, with no date: the owner could switch the contract off at any empty moment. Anyone-with-a-date gives nobody that power.
+
+**Consequences:**
+- A judge will see a function that deletes the contract. Its guards are tested by unit tests, a run on the real runtime, the random sequences and injected bugs (E-029), and one more attempt joins the refusal room.
+- Every random sequence must now wind down to nothing and retire, which also proves no money can get stuck.
+- A writer who never reclaims keeps the contract from retiring, and the deposit stays until they do. That is no worse than the plain lock, and nobody's money is at risk.
+- The contract changed, so the artifact in E-026 is superseded. Mainnet gets a new double build.
+

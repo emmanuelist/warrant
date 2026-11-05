@@ -57,6 +57,7 @@ All value-moving methods require exactly 1 yoctoNEAR (an explicit, full-access s
 | `reclaim_collateral(series_id)` | Writer, after expiry, once | Pays `collateral_held` to the writer. Unexercised longs are now worthless. |
 | `retry_payout(token_id)` | Anyone with an owed balance | Re-sends the owed amount |
 | `allow_token(token_id, min_amount)` / `disallow_token(token_id)` | Owner | Edits the allowlist. Existing series are unaffected. |
+| `retire()` | Anyone, from `retire_after_ns`, once the contract holds nothing for anyone | Deletes this account, which sends its NEAR to the owner. See "Retiring". |
 
 Every payout is `intents.near.mt_transfer(receiver, token_id, amount)` from this contract with 1 yocto. If that promise fails, the amount is added to `owed[(receiver, token_id)]` and an `payout_failed` event is emitted.
 
@@ -107,7 +108,23 @@ Any other `msg` is refused with `ERR_BAD_MSG`. Payouts go to the signer's Intent
 | `ERR_OFFER_AMOUNT` | `buy` amount exceeds what the offer has left |
 | `ERR_NOTHING_TO_PAY` | `withdraw_proceeds` / `retry_payout` with nothing due |
 | `ERR_NOT_OWNER` | Allowlist edits by a non-owner |
+| `ERR_CANNOT_RETIRE` | `retire` before `retire_after_ns`, or while any series holds collateral or proceeds, or while a payout is owed or in flight |
 | `ERR_OVERFLOW` | Arithmetic overflow |
+
+## Retiring
+The contract's account is meant to have no keys, so nobody can change its code (D-035). Its storage deposit would then be stuck forever, so the code itself can return it (D-038).
+
+`retire()` needs all of these, or it refuses with `ERR_CANNOT_RETIRE`:
+- The chain's time is at or past `retire_after_ns`, fixed at init and shown by `get_config`.
+- Every series has `collateral_held == 0` and `proceeds_held == 0`.
+- No payout is owed (`owed_entries == 0`) or waiting for its result (`payouts_in_flight == 0`).
+
+It moves no tokens. It clears the series, offers and allowlist, because the chain won't delete an account holding more than 10 KB of state, then deletes the account with the owner as beneficiary. Anyone can call it, and only the owner can benefit.
+
+Known limits:
+- A writer who never reclaims keeps the contract from retiring, so its deposit stays until they do. Nobody's money is at risk.
+- Tokens sent to the contract without a `msg` aren't in its books, and no method can move them, retired or not.
+- After retiring, anyone could register the account's name again. Nothing is held under it by then, and any position left inside Intents is for an expired series.
 
 ## Invariants (tested)
 Each also holds across randomized sequences (`src/tests/invariants.rs`, E-028), where the third is exact and checked against the `mt_transfer` promises each call schedules.
@@ -118,7 +135,7 @@ Each also holds across randomized sequences (`src/tests/invariants.rs`, E-028), 
 4. A refused action leaves every balance unchanged.
 
 ## Events (NEP-297, standard `intents_options`, version `1.0.0`)
-`create`, `write`, `list`, `cancel_offer`, `buy`, `exercise`, `close`, `withdraw_proceeds`, `reclaim_collateral`, `payout_failed`, `payout_retried`. Position movements also emit standard `nep245` `mt_mint` / `mt_burn` / `mt_transfer`.
+`create`, `write`, `list`, `cancel_offer`, `buy`, `exercise`, `close`, `withdraw_proceeds`, `reclaim_collateral`, `payout_failed`, `payout_retried`, `retired`. Position movements also emit standard `nep245` `mt_mint` / `mt_burn` / `mt_transfer`.
 
 ## Limitations (known, accepted for the hackathon)
 - **Storage:** the contract pays for storage (series, offers, NEP-245 balances), with no NEP-145 registration. The allowlist minimum limits series spam. Transfers of longs to many fresh accounts still consume contract storage.

@@ -16,6 +16,7 @@ mod invariants;
 
 const HOUR_NS: u64 = 3_600 * 1_000_000_000;
 const NOW: u64 = 1_800_000_000 * 1_000_000_000;
+const RETIRE_AFTER: u64 = NOW + 2 * HOUR_NS;
 const WNEAR: &str = "nep141:wrap.near";
 const USDC: &str = "nep141:usdc.near";
 
@@ -67,7 +68,7 @@ fn set_ctx_with_result(predecessor: &AccountId, result: PromiseResult) {
 
 fn setup() -> Contract {
     set_ctx(&owner(), 0, NOW);
-    let mut contract = Contract::new(owner(), intents());
+    let mut contract = Contract::new(owner(), intents(), U64(RETIRE_AFTER));
     set_ctx(&owner(), 1, NOW);
     contract.allow_token(WNEAR.to_string(), U128(1));
     contract.allow_token(USDC.to_string(), U128(1));
@@ -1176,4 +1177,104 @@ fn config_lists_allowed_tokens() {
     let config = contract.get_config();
     assert_eq!(config.intents_id, intents());
     assert_eq!(config.allowed_tokens.len(), 2);
+}
+
+// ---------- retire ----------
+
+/// Brings back every payout in flight, as Intents would.
+fn land_payouts(contract: &mut Contract) {
+    while contract.get_config().payouts_in_flight.0 > 0 {
+        set_ctx_with_result(&options(), PromiseResult::Successful(vec![]));
+        contract.on_payout(alice(), WNEAR.to_string(), U128(1));
+    }
+}
+
+#[test]
+#[should_panic(expected = "ERR_CANNOT_RETIRE")]
+fn retire_before_its_date_refused() {
+    let mut contract = setup();
+    set_ctx(&bob(), 1, RETIRE_AFTER - 1);
+    let _ = contract.retire();
+}
+
+#[test]
+#[should_panic(expected = "ERR_CANNOT_RETIRE")]
+fn retire_while_holding_collateral_refused() {
+    let mut contract = with_call_series();
+    set_ctx(&bob(), 1, RETIRE_AFTER);
+    let _ = contract.retire();
+}
+
+#[test]
+#[should_panic(expected = "ERR_CANNOT_RETIRE")]
+fn retire_with_unclaimed_proceeds_refused() {
+    let mut contract = bob_holds_two();
+    via_intents(
+        &mut contract,
+        &bob(),
+        USDC,
+        100,
+        r#"{"action":"exercise","series_id":"1","amount":"2"}"#,
+    );
+    land_payouts(&mut contract);
+    set_ctx(&alice(), 1, RETIRE_AFTER);
+    let _ = contract.reclaim_collateral(U64(1));
+    land_payouts(&mut contract);
+    assert!(series(&contract, 1).proceeds_held.0 > 0);
+    set_ctx(&bob(), 1, RETIRE_AFTER);
+    let _ = contract.retire();
+}
+
+#[test]
+#[should_panic(expected = "ERR_CANNOT_RETIRE")]
+fn retire_with_a_payout_in_flight_refused() {
+    let mut contract = with_call_series();
+    set_ctx(&alice(), 1, RETIRE_AFTER);
+    let _ = contract.reclaim_collateral(U64(1));
+    assert_eq!(contract.get_config().payouts_in_flight.0, 1);
+    set_ctx(&bob(), 1, RETIRE_AFTER);
+    let _ = contract.retire();
+}
+
+#[test]
+#[should_panic(expected = "ERR_CANNOT_RETIRE")]
+fn retire_with_a_payout_owed_refused() {
+    let mut contract = with_call_series();
+    set_ctx(&alice(), 1, RETIRE_AFTER);
+    let _ = contract.reclaim_collateral(U64(1));
+    set_ctx_with_result(&options(), PromiseResult::Failed);
+    contract.on_payout(alice(), WNEAR.to_string(), U128(30));
+    assert_eq!(contract.get_config().owed_entries.0, 1);
+    set_ctx(&bob(), 1, RETIRE_AFTER);
+    let _ = contract.retire();
+}
+
+#[test]
+fn retire_once_nothing_is_held_deletes_the_account_for_the_owner() {
+    let mut contract = with_call_series();
+    set_ctx(&alice(), 1, RETIRE_AFTER);
+    let _ = contract.reclaim_collateral(U64(1));
+    set_ctx_with_result(&options(), PromiseResult::Failed);
+    contract.on_payout(alice(), WNEAR.to_string(), U128(30));
+    set_ctx(&alice(), 1, RETIRE_AFTER);
+    let _ = contract.retry_payout(WNEAR.to_string());
+    land_payouts(&mut contract);
+    assert_eq!(contract.get_config().owed_entries.0, 0);
+
+    // Anyone can call it, and it can only pay the owner.
+    set_ctx(&bob(), 1, RETIRE_AFTER);
+    let _ = contract.retire();
+    let receipts = near_sdk::test_utils::get_created_receipts();
+    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts[0].receiver_id, options());
+    assert!(matches!(
+        receipts[0].actions.as_slice(),
+        [near_sdk::mock::MockAction::DeleteAccount { beneficiary_id, .. }] if *beneficiary_id == owner()
+    ));
+    assert!(contract.get_series_list(None, None).is_empty());
+    assert!(
+        get_logs()
+            .iter()
+            .any(|l| l.contains(r#""event":"retired""#))
+    );
 }

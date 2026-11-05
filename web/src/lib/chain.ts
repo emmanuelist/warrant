@@ -39,6 +39,7 @@ interface ConfigView {
   owner_id: string;
   intents_id: string;
   allowed_tokens: { token_id: string; min_amount: string }[];
+  retire_after_ns: string;
 }
 
 export interface Token {
@@ -51,6 +52,8 @@ export interface Token {
 export interface Board {
   /** The Intents contract this options contract settles through (`get_config`). */
   intentsId: string;
+  /** The earliest time `retire` can run (`get_config`, D-038). */
+  retireAfterNs: string;
   series: Series[];
   offers: Offer[];
   tokens: Record<string, Token>;
@@ -190,6 +193,7 @@ export async function loadBoard(viewerAccount: string | null): Promise<Board> {
     offers,
     tokens,
     allowed: configView.allowed_tokens,
+    retireAfterNs: configView.retire_after_ns,
     contractInIntents,
     obligations,
     viewer,

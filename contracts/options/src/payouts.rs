@@ -14,7 +14,13 @@ const GAS_FOR_ON_PAYOUT: Gas = Gas::from_tgas(5);
 const PAYOUT_MEMO: &str = "intents-options payout";
 
 impl Contract {
-    pub(crate) fn pay(&self, receiver_id: AccountId, token_id: String, amount: u128) -> Promise {
+    pub(crate) fn pay(
+        &mut self,
+        receiver_id: AccountId,
+        token_id: String,
+        amount: u128,
+    ) -> Promise {
+        self.payouts_in_flight += 1;
         ext_mt_core::ext(self.intents_id.clone())
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(GAS_FOR_INTENTS_TRANSFER)
@@ -34,8 +40,12 @@ impl Contract {
 
     fn credit_owed(&mut self, receiver_id: AccountId, token_id: String, amount: u128) {
         let key = (receiver_id, token_id);
-        let owed = self.owed.get(&key).copied().unwrap_or(0);
-        self.owed.insert(key, checked_add(owed, amount));
+        let owed = self.owed.get(&key).copied();
+        if owed.is_none() {
+            self.owed_entries += 1;
+        }
+        self.owed
+            .insert(key, checked_add(owed.unwrap_or(0), amount));
     }
 }
 
@@ -45,6 +55,8 @@ impl Contract {
     /// whose result we can't read must not be paid twice.
     #[private]
     pub fn on_payout(&mut self, receiver_id: AccountId, token_id: String, amount: U128) {
+        // Never a panic here: it would lose the record of a failed payout.
+        self.payouts_in_flight = self.payouts_in_flight.saturating_sub(1);
         if let Err(PromiseError::Failed) = env::promise_result_checked(0, 0) {
             OptionsEvent::PayoutFailed {
                 receiver_id: receiver_id.clone(),
@@ -71,6 +83,7 @@ impl Contract {
             .remove(&(receiver_id.clone(), token_id.clone()))
             .unwrap_or(0);
         require!(amount > 0, ERR_NOTHING_TO_PAY);
+        self.owed_entries = self.owed_entries.saturating_sub(1);
         OptionsEvent::PayoutRetried {
             receiver_id: receiver_id.clone(),
             token_id: token_id.clone(),
