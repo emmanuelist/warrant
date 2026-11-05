@@ -28,6 +28,13 @@ export function units(raw: bigint | string, token: Token | undefined): { short: 
   };
 }
 
+/** An amount as someone would type it into a field: no grouping, no trailing zeros. */
+export function typeable(raw: bigint | string, token: Token | undefined): string {
+  if (token?.decimals === null || token?.decimals === undefined) return "1";
+  const plain = units(raw, token).full.replace(/,/g, "");
+  return plain.includes(".") ? plain.replace(/\.?0+$/, "") : plain;
+}
+
 /** At most two fraction digits, for tight labels; the full value belongs in a title. */
 export function compact(raw: bigint | string, token: Token | undefined): string {
   if (token?.decimals == null) return units(raw, token).short;

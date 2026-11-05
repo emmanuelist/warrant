@@ -123,6 +123,7 @@ It moves no tokens. It clears the series, offers and allowlist, because the chai
 
 Known limits:
 - A writer who never reclaims keeps the contract from retiring, so its deposit stays until they do. Nobody's money is at risk.
+- `retire` can't clear the ledger of longs, because a `LookupMap` can't be listed, and the chain won't delete an account holding more than 10 KB of state beyond its code. Longs held across about 60 to 100 more accounts than today would keep it from retiring the same way (D-045, E-035).
 - Tokens sent to the contract without a `msg` aren't in its books, and no method can move them, retired or not.
 - After retiring, anyone could register the account's name again. Nothing is held under it by then, and any position left inside Intents is for an expired series.
 
