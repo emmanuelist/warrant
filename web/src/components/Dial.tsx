@@ -118,7 +118,9 @@ export function Dial({ board, nowMs, onSelect }: { board: Board; nowMs: number; 
           </p>
           {opening && (
             <p key={opening.series_id} className="dial-opened fig">
-              Lock #{opening.series_id} open · {shownAmount(opening)}
+              <span>Lock #{opening.series_id} open</span>
+              <span className="dial-opened-dot"> · </span>
+              <span>{shownAmount(opening)}</span>
             </p>
           )}
           {shown && (

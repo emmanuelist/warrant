@@ -1098,6 +1098,16 @@ li {
     opacity: 0;
   }
 
+  /* On a phone's smaller dial the two parts stack, so the dot can't end up alone on a line. */
+  @container (max-width: 420px) {
+    .dial-opened span {
+      display: block;
+    }
+    .dial-opened .dial-opened-dot {
+      display: none;
+    }
+  }
+
   /* A lock on the ring: blued steel, set in a white collar so it reads on the printed scale. */
   .dial-marker {
     position: absolute;
