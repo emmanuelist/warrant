@@ -10,7 +10,7 @@ import type { ActionId, Lever } from "../lib/interlock";
 import { breakEven } from "../lib/payoff";
 import { exerciseNet, useReference } from "../lib/reference";
 import { ViewerContext } from "../lib/viewer";
-import { type Call, onOptions, send, signer, viaIntents } from "../lib/wallet";
+import { type Call, NEAR_FOR_GAS, onOptions, send, signer, viaIntents } from "../lib/wallet";
 import { CrossChainIn, CrossChainOut, MainnetOnly } from "./CrossChain";
 import { DialPreview } from "./Dial";
 import { Choice, CountField, countProblem, Field, inputClass, Submit, wholeCount } from "./form";
@@ -164,7 +164,9 @@ function SheetBody({
           ? signer === "devnet"
             ? "Choose who acts, above, to send this."
             : "Connect a wallet, above, to send this."
-          : null;
+          : !evm && board.viewer && board.viewer.wallet.near !== null && board.viewer.wallet.near < NEAR_FOR_GAS
+            ? "This wallet needs about 0.1 NEAR free for gas. The chain holds it while the transaction runs and returns nearly all of it."
+            : null;
   // The series as the chain reads it now, not as it was when the sheet opened.
   const live = request.type === "lever" ? (board.series.find((s) => s.series_id === request.series.series_id) ?? request.series) : null;
   const topUp = (token: string, amount: bigint, back: SheetRequest) => onOpen({ type: "deposit", token, amount, back });

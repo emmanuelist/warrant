@@ -20,7 +20,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { base58Encode } from "../web/src/lib/base58.ts";
-import { rpcAt, viewAt } from "../web/src/lib/nearRpc.ts";
+import { anyNode, MAINNET_NODES, rpcAt, viewAt } from "../web/src/lib/nearRpc.ts";
 import { signAndSend } from "../web/src/lib/nearTx.ts";
 
 const args = process.argv.slice(2);
@@ -29,7 +29,9 @@ if (devnet) args.shift();
 const [command, amountArg] = args;
 
 const TGAS = 10n ** 12n;
-const MAX_GAS = 300n * TGAS;
+// A transaction's gas is charged up front at 0.001 NEAR per TGas and the unused part refunded, so
+// asking for the 300 TGas maximum would need 0.3 NEAR free (docs/CONTEXT.md).
+const CALL_GAS = 90n * TGAS;
 const YOCTO = 1n;
 const NEAR_ONE = 10n ** 24n;
 const USDC_ONE = 10n ** 6n;
@@ -45,7 +47,7 @@ function mainnetProfile() {
   const holderDir = join(credentials, "warrant-holder");
   const holder = readdirSafe(holderDir)[0]?.replace(/\.json$/, "") ?? null;
   return {
-    rpc: "https://free.rpc.fastnear.com",
+    rpcs: MAINNET_NODES,
     options: "warrant-options.near",
     intents: "intents.near",
     wrap: "wrap.near",
@@ -66,7 +68,7 @@ function devnetProfile() {
       .map((line) => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]),
   );
   return {
-    rpc: env.VITE_RPC_URL,
+    rpcs: [env.VITE_RPC_URL],
     options: env.VITE_OPTIONS_CONTRACT,
     intents: env.VITE_INTENTS_CONTRACT,
     wrap: env.VITE_WRAP_CONTRACT,
@@ -88,16 +90,22 @@ function readdirSafe(dir) {
 }
 
 const wnear = `nep141:${net.wrap}`;
-const view = (account, method, params = {}) => viewAt(net.rpc, account, method, params);
+const rpc = (method, params) => anyNode(net.rpcs, (url) => rpcAt(url, method, params));
+const view = (account, method, params = {}) => anyNode(net.rpcs, (url) => viewAt(url, account, method, params));
 
 /** The chain's clock: expiries are checked against block time, which a devnet may run ahead of. */
 async function chainNowNs() {
-  const block = await rpcAt(net.rpc, "block", { finality: "final" });
+  const block = await rpc("block", { finality: "final" });
   return BigInt(block.header.timestamp_nanosec);
 }
 
-async function send(signer, receiverId, method, callArgs, deposit = YOCTO, gas = MAX_GAS) {
-  return signAndSend(net.rpc, net.key(signer), signer, { receiverId, actions: [{ method, args: callArgs, gas, deposit }] });
+async function send(signer, receiverId, method, callArgs, deposit = YOCTO, gas = CALL_GAS) {
+  // A node is chosen before sending, never after: a timed-out send may still land.
+  const node = await anyNode(net.rpcs, async (url) => {
+    await rpcAt(url, "block", { finality: "final" });
+    return url;
+  });
+  return signAndSend(node, net.key(signer), signer, { receiverId, actions: [{ method, args: callArgs, gas, deposit }] });
 }
 
 const failures = (outcome) =>
@@ -168,8 +176,8 @@ const steps = {
         continue;
       }
       try {
-        const account = await rpcAt(net.rpc, "query", { request_type: "view_account", finality: "final", account_id: id });
-        const keys = await rpcAt(net.rpc, "query", { request_type: "view_access_key_list", finality: "final", account_id: id });
+        const account = await rpc("query", { request_type: "view_account", finality: "final", account_id: id });
+        const keys = await rpc("query", { request_type: "view_access_key_list", finality: "final", account_id: id });
         const near = Number((BigInt(account.amount) * 10_000n) / NEAR_ONE) / 10_000;
         console.log(`${role} ${id}: ${near} NEAR · ${account.storage_usage} bytes · code ${account.code_hash} · ${keys.keys.length} key(s)`);
       } catch (error) {
@@ -210,7 +218,9 @@ const steps = {
       const bounds = await view(net.wrap, "storage_balance_bounds");
       await ok("register on wNEAR", net.writer, net.wrap, "storage_deposit", { account_id: net.writer, registration_only: true }, BigInt(bounds.min), 20n * TGAS);
     }
-    await ok("wrap", net.writer, net.wrap, "near_deposit", {}, amount, 20n * TGAS);
+    // Resumable: a run that stopped after wrapping doesn't wrap again.
+    const wrapped = BigInt(await view(net.wrap, "ft_balance_of", { account_id: net.writer }));
+    if (wrapped < amount) await ok("wrap", net.writer, net.wrap, "near_deposit", {}, amount - wrapped, 20n * TGAS);
     await ok("deposit into Intents", net.writer, net.wrap, "ft_transfer_call", { receiver_id: net.intents, amount: amount.toString(), msg: "" });
     console.log(`writer wNEAR inside Intents: ${await balanceIn(net.writer, wnear)}`);
   },
@@ -288,7 +298,7 @@ const steps = {
     const expected = new Map(catalog.map((entry) => [entry.id, entry.expect]));
     const sent = new Map();
 
-    const attempt = async (id, signer, receiver, method, callArgs, deposit = YOCTO, gas = MAX_GAS) => {
+    const attempt = async (id, signer, receiver, method, callArgs, deposit = YOCTO, gas = CALL_GAS) => {
       if (!expected.has(id)) throw new Error(`${id} isn't in room.json`);
       const want = expected.get(id);
       const outcome = await send(signer, receiver, method, callArgs, deposit, gas);
@@ -460,4 +470,7 @@ if (!step) {
   console.error(`Usage: node scripts/run.mjs [--devnet] ${Object.keys(steps).join("|")}`);
   process.exit(2);
 }
-await step();
+await step().catch((error) => {
+  console.error(`${command} failed: ${error.message}${error.detail ? ` ${JSON.stringify(error.detail)}` : ""}`);
+  process.exit(1);
+});

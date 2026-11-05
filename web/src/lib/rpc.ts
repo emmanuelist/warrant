@@ -1,15 +1,15 @@
 import { config } from "./config";
-import { RpcError, rpcAt, viewAt } from "./nearRpc";
+import { anyNode, RpcError, rpcAt, viewAt } from "./nearRpc";
 
 export { RpcError };
 
-export async function rpc<T>(method: string, params: unknown, url = config.rpcUrl): Promise<T> {
-  return rpcAt<T>(url, method, params);
+export async function rpc<T>(method: string, params: unknown, urls = config.rpcUrls): Promise<T> {
+  return anyNode(urls, (url) => rpcAt<T>(url, method, params));
 }
 
 /** A read-only contract call at final finality. */
 export async function view<T>(contract: string, method: string, args: object = {}): Promise<T> {
-  return viewAt<T>(config.rpcUrl, contract, method, args);
+  return anyNode(config.rpcUrls, (url) => viewAt<T>(url, contract, method, args));
 }
 
 /** The chain's own clock (latest final block), in milliseconds. */

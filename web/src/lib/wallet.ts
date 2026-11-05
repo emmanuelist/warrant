@@ -7,7 +7,14 @@ import { isEvmAccount } from "./evm";
 export type { Transaction };
 
 export const TGAS = 1_000_000_000_000n;
-const MAX_GAS = 300n * TGAS;
+/**
+ * Gas for a call that doesn't name its own. The chain holds 0.001 NEAR per TGas a transaction asks
+ * for until it finishes, so the 300 TGas maximum would shut out a wallet with under 0.3 NEAR free
+ * (docs/CONTEXT.md). Every action in the refusal room goes through on 60.
+ */
+const CALL_GAS = 90n * TGAS;
+/** What a NEAR wallet needs free to send one call: CALL_GAS held, the fees, the account's own storage. */
+export const NEAR_FOR_GAS = 95_000_000_000_000_000_000_000n;
 const ONE_YOCTO = 1n;
 
 /** The local sandbox's genesis key, written by tests/devnet.rs. Read only in sandbox builds. */
@@ -26,7 +33,7 @@ function getConnector(): Promise<NearConnector> {
   connector ??= import("@hot-labs/near-connect").then(async ({ NearConnector }) => {
     const instance = new NearConnector({
       network: "mainnet",
-      providers: { mainnet: [config.rpcUrl] },
+      providers: { mainnet: config.rpcUrls },
     });
     await instance.whenManifestLoaded;
     return instance;
@@ -67,7 +74,7 @@ export interface Call {
   args: object;
   /** yoctoNEAR. Defaults to exactly 1: every Warrant and Intents method we call asserts it. */
   deposit?: bigint;
-  /** Defaults to an even share of the 300 Tgas a transaction may carry. */
+  /** Defaults to CALL_GAS. */
   gas?: bigint;
 }
 
@@ -115,15 +122,10 @@ export function transactionsFor(calls: Call[]): Transaction[] {
     if (last && last.receiverId === call.receiverId) last.calls.push(call);
     else transactions.push({ receiverId: call.receiverId, calls: [call] });
   }
-  return transactions.map(({ receiverId, calls: group }) => {
-    const fixed = group.reduce((sum, c) => sum + (c.gas ?? 0n), 0n);
-    const open = BigInt(group.filter((c) => c.gas === undefined).length);
-    const share = open > 0n ? (MAX_GAS - fixed) / open : 0n;
-    return {
-      receiverId,
-      actions: group.map((c) => ({ method: c.method, args: c.args, gas: c.gas ?? share, deposit: c.deposit ?? ONE_YOCTO })),
-    };
-  });
+  return transactions.map(({ receiverId, calls: group }) => ({
+    receiverId,
+    actions: group.map((c) => ({ method: c.method, args: c.args, gas: c.gas ?? CALL_GAS, deposit: c.deposit ?? ONE_YOCTO })),
+  }));
 }
 
 function settle(outcomes: Outcome[]): Sent {

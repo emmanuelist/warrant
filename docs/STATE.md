@@ -3,24 +3,22 @@ _Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) ·
 
 **Name:** Warrant (D-014). **Thesis:** Options that can't default and need no oracle: the collateral is locked inside NEAR Intents until expiry.
 **Milestone:** M1, due 2026-11-05 23:59 UTC · **Deadline:** 2026-11-14 23:59 UTC · 9 days left on 2026-11-05
-**Next action:** the first mainnet deploy (#10) as soon as #1 is funded, in this order:
-1. `cargo near build reproducible-wasm` in `contracts/options`, from a clean commit that will be pushed and tagged, not squashed (its SHA is what NEP-330 names).
-2. `scripts/mainnet-deploy.sh contract`, then `holder` and `relayer`. Then `node scripts/run.mjs` with `allow`, `fund 0.85`, `swap 0.3`, `share 0.5`, `write`, `room`, which writes `VITE_REFUSAL_TXS` to `web/.env.production`.
-3. Commit that file, then host the page and relayer (`scripts/mainnet-deploy.sh host`) and send one real transaction from the page.
-4. The first real 1Click payout to Base (#11).
+**Live:** https://warrant-options.vercel.app · contract `warrant-options.near` (E-031)
+**Next action:** finish #10 with one EVM-signed action through the hosted relayer, which the round trip from Base (#11) does: seed a fresh `0x` wallet on Base from the demo's Intents balance, deposit USDC through 1Click, buy, exercise, and be paid on Base. Then the README (#13) and the film (#22).
 
-Claude provides the wallet and records the video. The user only funds, posts on X and confirms the payload (D-036). The demo winds down from 2026-11-26 (#25). What the proof has to beat: D-037 (#11, #18, #20, #21, #22).
-**Blocked on (the user's):**
-1. **#24:** 5 NEAR to `d0482bffd77daa246ff50cd36cd8c8392548a0cf0fc7d6ccd887a3675f084148`, on the NEAR Protocol network. Blocks M1. The account is still `UNKNOWN_ACCOUNT`. A background check watches for it.
+Claude provides the wallet and records the video. The user only funds, posts on X and confirms the payload (D-036). The demo winds down from 2026-11-26 (#25). What the proof has to beat: D-037 (#11, #18, #22).
+**Blocked on (the user's):** nothing right now. The funding (#24) arrived.
 
-The web app and relayer go on Vercel, and narration uses an ElevenLabs key read at run time and never copied here (the user agreed to both, 2026-11-05). Deploy only a reproducible build: `target/near/options.wasm` is overwritten by any plain `cargo near build`, and `mainnet-deploy.sh` refuses one without its NEP-330 snapshot.
+Vercel hosts the page and relayer. Deploy with `vercel build --prod --yes` and `vercel deploy --prebuilt --prod --yes` in `web/`; `vercel link` leaves a `web/.env.local` and `web/.gitignore` to delete. Narration uses an ElevenLabs key read at run time and never copied here (the user agreed to both, 2026-11-05).
 
 ## Works (verified this session)
 | Capability | Verified by | Evidence |
 |---|---|---|
+| **Live on mainnet (2026-11-05):** the contract with a series and its collateral inside Intents; 31 of 31 refusal-room attempts as `room.json` says, read back by the hosted page; a real 1Click swap; a purchase on the hosted page signed in a real wallet (Intear through near-connect) | `scripts/run.mjs`, RPC read-back, the page itself | E-031 |
+| What only mainnet shows, fixed (2026-11-05): gas is charged up front, so calls ask for 90 TGas and the relayer 140; four public nodes with failover when one rate-limits; the chart crash once 1Click has a price; a fallback for render errors | Devnet room at 60 TGas, `web/scripts/relay-check.mjs`, Playwright on the production build | E-031, D-041 |
 | CI on GitHub: both jobs green on `main` (2026-11-05) | [run 41988517094](https://github.com/emmanuelist/warrant/actions/runs/41988517094) | E-030 |
 | The history split by area, each commit checked, a fresh clone green; two reproducible Docker builds of the previous contract byte-identical (2026-11-05) | Gate per commit, `cargo near build reproducible-wasm` | E-025, E-026 |
-| Refusal room on the devnet (D-037, 2026-11-05): 28 real attempts reach all 26 named refusals, 3 honest calls go through, refused attempts move no money, and the app reads all 30 back from chain. **Not yet sent on mainnet** | `scripts/run.mjs room`, Playwright, axe-core, impeccable detect | E-027, E-029 |
+| Refusal room on the devnet (D-037, 2026-11-05): 28 real attempts reach all 26 named refusals, 3 honest calls go through, refused attempts move no money, and the app reads all 30 back from chain | `scripts/run.mjs room`, Playwright, axe-core, impeccable detect | E-027, E-029 |
 | The deploy rehearsed, nothing spent (2026-11-05): a fresh clone passes the CI steps; every `scripts/run.mjs` step runs on the devnet with real refusals refunded in full; a NEP-413 signature over a live 1Click intent passes mainnet `simulate_intents`; the relayer as `vercel build` emits it passes the relay check on the devnet; the README's steps work in a browser | `scripts/run.mjs`, `swap-check`, `web/scripts/relay-check.mjs`, Playwright | E-024 |
 | Rules re-read: Q-001 counts code from 2026-10-19 (D-034). Live `intents.near` and `wrap.near` still match the pinned hashes, and Intents reports nothing paused (2026-11-05) | curl, RPC | E-023 |
 | Options contract: fmt + clippy `-D warnings`, 78 unit tests, sandbox suites `sandbox` (3) + `signers` (1); 326.6 KB wasm with `on_auth` and `retire` (2026-11-05) | Gate | E-004, E-013, E-017, E-023 |
@@ -41,18 +39,21 @@ The web app and relayer go on Vercel, and narration uses an ElevenLabs key read 
 ## Deployed
 | What | Network | Address / URL | Last checked |
 |---|---|---|---|
-| Nothing on mainnet. Owner `d0482bff…4148` is unfunded and contract account `warrant-options.near` doesn't exist yet (D-035). | mainnet | `UNKNOWN_ACCOUNT` for both | 2026-11-05 |
-| Nothing hosted. | | | 2026-11-05 |
-| Local key files only, unfunded: holder `e96016e5…da50`, relayer `f6464d4e…90ec` (`~/.near-credentials/warrant-*`) | mainnet | `UNKNOWN_ACCOUNT` | 2026-11-05 |
+| Options contract, `code_hash DADQfyxqwetsaZBh5n7JEQ8MnwZKQiqzCxaS465svgYz`, tag `mainnet-v0.1.0`, one full-access key until #18 | mainnet | `warrant-options.near` | 2026-11-05 |
+| Page and relayer | Vercel | https://warrant-options.vercel.app, `/api/relay` | 2026-11-05 |
+| Owner and writer | mainnet | `d0482bff…4148`: about 0.23 NEAR; inside Intents 0.25 wNEAR and 0.75 USDC | 2026-11-05 |
+| Demo holder (Intear wallet) | mainnet | `e96016e5…da50`: about 0.13 NEAR; inside Intents 0.10 wNEAR, 0.01 USDC; 1 long | 2026-11-05 |
+| Relayer, function-call key on `intents.near` / `execute_intents`, allowance 0.15 NEAR | mainnet | `f6464d4e…90ec`: about 0.2 NEAR. **Not yet used on mainnet** | 2026-11-05 |
 
 ## Broken or unverified
-- Mainnet signing through near-connect (`signAndSendTransaction(s)`, `signMessage`) is unexercised: only mainnet has wallets (#10).
-- 1Click: a `submit-intent` that moves funds (NEP-413 or ERC-191; the NEP-413 signature itself passes `simulate_intents`, E-024), a delivered payout to Base, and a real deposit from another chain (#11, after #10). 1Click doesn't check ERC-191 signatures at submit (E-019); the UI simulates first.
-- A real EVM wallet's prompt (MetaMask shows the ERC-191 JSON as text) and the relayer on mainnet with a function-call key: unexercised until #10. Solana and passkey signers are not built (D-030).
+- 1Click across chains: a delivered payout to Base and a real deposit from another chain (#11). The swap inside Intents works (E-031). 1Click doesn't check ERC-191 signatures at submit (E-019); the UI simulates first.
+- The relayer on mainnet with its function-call key: answers on the host and refuses what it should, but has sent nothing (#10, #11).
+- A real EVM extension's prompt (MetaMask shows the ERC-191 JSON as text): unexercised, and hard to drive headless. Solana and passkey signers are not built (D-030).
+- Other near-connect wallets: only Intear is exercised (D-040).
 - The `retry_payout` UI path: needs a failed payout to appear; the contract path is unit-tested (E-004).
-- The refusals band on mainnet: no recorded hashes until #10; its cards say so until then. The archival read path is verified by curl, not yet through a mainnet build.
-- The exercise net (1Click reference price) runs only on mainnet: the devnet has no price, so that path is unverified until a mainnet build (#10).
-- `scripts/mainnet-deploy.sh`: its near CLI chains are checked with `--help` at every level but never sent (no funds). The hosted function has run only locally, as `vercel build` emits it.
+- The exercise net (1Click reference price) in the primary move: the chart's reference line is verified on mainnet, the sentence isn't, because the one long held is out of the money.
+- `scripts/mainnet-deploy.sh lock`: its near CLI chain is checked with `--help` but never sent (#18).
+- `retire` on mainnet: can't run before 2026-11-26.
 - What a full storage balance blocks beyond new writes (D-035).
 - Design debt (P3): material colours are literal oklch values; the route's stations trip the detector's nested-cards rule (deliberate, inside the control well); no sorting, search or batch claims on the board (the critique's Flexibility 2/4).
 

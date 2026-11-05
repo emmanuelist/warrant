@@ -33,6 +33,7 @@ Append-only proof log. Every claim in the README, demo or submission points to a
 | E-028 | 2026-11-05 | The invariants hold across 32,768 random steps in 256 sequences, in 12 s. Every action was accepted and all 25 refusals were reached, and the run fails if any wasn't. The money is checked against the `mt_transfer` promises each call actually schedules, and refused calls roll back from a storage snapshot, as on chain. It catches real bugs: all 6 deliberately injected ones failed within 113 steps, including removing the time lock. | Output below | `21-invariants` |
 | E-029 | 2026-11-05 | `retire` returns the deposit and can't touch money (D-038). On the real runtime it deleted the account with 12,143 bytes of state, and the owner received the whole balance; without clearing its state first, it fails. In the random run, 255 of 256 sequences wound down to nothing and retired, and the other retired cleanly mid-sequence, so no money got stuck. All 6 bugs injected into `retire` were caught. The room rehearsal now has 28 attempts at all 26 named refusals, plus 3 honest calls. **Not on mainnet.** | Output below | `18-retire` |
 | E-030 | 2026-11-05 | The contract with `retire` reproduces and a fresh clone passes. Two Docker builds are byte-identical, 326,736 bytes, `code_hash GGvJPAmHR6RJr5NvN5Au5x16SvWp5ABKshteMfTGo6h`. A clone passes fmt, clippy, the wasm build, 78 unit tests, `sandbox` 3 and `signers` 1, plus web lint, typecheck and build. Those ran at `deaf217`, whose code `git diff` shows is unchanged by the rewrite in D-039. The hash embeds the commit, so mainnet gets its own build. The first CI run on GitHub, on `main`, passed both jobs. | Output below | `18-retire` |
+| E-031 | 2026-11-05 | Warrant is live on mainnet. `warrant-options.near` holds a series with its collateral inside `intents.near`, all 31 refusal-room attempts ended as `room.json` says, 1Click swapped real funds, and a real wallet (Intear, through near-connect) signed a real purchase from the hosted page. The first real runs also found what the devnet couldn't: gas is charged up front, the free node rate-limits an ordinary visit, and the page crashed once a price existed. All three are fixed | [Page](https://warrant-options.vercel.app) · [contract](https://nearblocks.io/address/warrant-options.near) · [wallet-signed buy](https://nearblocks.io/txns/CvMRoftt8jhibE7pchQvZ3JBb9bXnDXUNAkwzonseGPU) · room hashes in `web/.env.production`; output below | f303ca2 |
 
 ## E-001 output
 ~~~text
@@ -909,3 +910,48 @@ npm ci 0 · lint 0 · typecheck 0 · build 0
 run 41988517094, push to main at bf3639f: contracts success, web success
 ~~~
 
+## E-031 output
+~~~
+=== the contract, read back
+warrant-options.near  code_hash DADQfyxqwetsaZBh5n7JEQ8MnwZKQiqzCxaS465svgYz
+NEP-330: github.com/emmanuelist/warrant/tree/f14416969258a8f1aa6073adddb57d961f126b57 (tag mainnet-v0.1.0)
+deploy + init 4dhwQA8GWgjgP8hENjsc8eC2nt9e9yJZy7o92guwG2Ca · retire_after_ns 1795651200000000000 (2026-11-26)
+allowlist wNEAR DCMzuqQuUq1sZ8k15fxgWF8SbHXgXwXJ3rvMLyrGwJGm · USDC ADmbsGf3jkwrncsYAT62j6STHxKLQ3eB8k7kpMU5NQAV · BTC EmABMEs6WGWGY2cxw1t35WWPveLgSkQWfZJcuYAKio6T
+
+=== money into Intents
+wrap 0.85 6s4jqS4WdPcnf7QtsEFA4YVFXgt7gC3B5RYNMB26skFh · deposit 4pER9Z8FJRvMUisZdTxzLyzQtaJ2ySvdc3j21kFUH2aH
+first real 1Click swap, signed NEP-413, intent 5xXJ6amnhH8RHiMFEMJe2Kjutb1tA4Qo1PQ8KpyEab1U:
+  0.3 wNEAR -> 1.205542 USDC, SUCCESS in 25 s
+  near txs CwgTqJcSEidExmkofxXndNQ32wtGXVEJRvwgJJZaGU2R 4m2KyzdTYi4GkS6mA7oT6619D2gFGp2cB3s2xZtQT6qF 2tv7VA23psjiu549wPjEkd6Dj9eV28717SkstTNCrc2M
+USDC to the holder BijV1RJpwL6K1DB8sTGL9EYUwjpXaSJ8EDXfe2qbMnwM
+
+=== series 1
+write 3 calls 2L53cjfgp4yB2Ptf4FqDHxqbT4ZKJTY4G1RgUkPrdE4F · offer 2 EiKZqY5bHDi93r7YCutoddY6tjcV2mWSezE18oiaxocn
+series 1: 3 longs, 0.3 wNEAR locked, strike 0.45 USDC on 0.1 wNEAR, expiry 2026-11-26 00:00 UTC
+
+=== node scripts/run.mjs room, on mainnet
+31 attempts ended as room.json says; every refused attempt refunded in full, the contract's balances unchanged
+28 refused by name, across all 26 refusals; 3 honest calls went through
+e.g. reclaim-early ERR_NOT_EXPIRED 8vPwm6QrKDHkM2EtSYA5gT64qzuB4nTayz5zePbGt5Xt
+     honest-exercise went through   AGhabFx252CkRkNF4z5di7k3pWsLDmHTTQ2ZxG4SPurD
+     reclaim-twice ERR_ALREADY_RECLAIMED FwHdsPWaFsyL3tUvquzrvTU2H4BVV1LrRvygCd2xAWxW
+cost in gas: writer 0.2454 -> 0.2312 NEAR, holder 0.15 -> 0.1399 NEAR
+contract inside Intents after: 0.2 wNEAR (series 1) and 0.45 USDC (the strike paid, the writer's to claim)
+page read back all 31 from the archive: 28 of 28 refused by name, 3 of 3 went through
+
+=== the hosted page, signed by a real wallet
+https://warrant-options.vercel.app, near-connect 0.11.4 -> Intear Wallet (web) -> holder e96016e5...da50
+prompt: "Approve Transactions · Request from https://warrant-options.vercel.app ·
+         Transaction to intents.near · Call 'mt_transfer_call' with 90.0 Tgas and deposit 1 yoctoNEAR"
+tx CvMRoftt8jhibE7pchQvZ3JBb9bXnDXUNAkwzonseGPU, read back: holder holds 1 long, sheet "Sent and settled"
+
+=== what the first real runs found
+1. ft_transfer_call asking 300 Tgas: NotEnoughBalance, balance 0.29894, cost 0.30092. Asking 90: through, cost 0.00081.
+   The room passes at 60 Tgas on the devnet, as do the other wallet flows
+   (ft_withdraw, ft_transfer_call, wrap + deposit, mt_transfer_call, mt_transfer, mt_withdraw, close, cancel, proceeds, add_public_key).
+   Relayer: two exercises under one signature burn 30.4 Tgas; it now asks 140, inside its 0.15 NEAR allowance.
+2. free.rpc.fastnear.com: 429 on 34 of 94 reads across two page loads, and the board went dark.
+   With failover: board reads during a 429, 31 of 31 tx read at 2 at once.
+3. RangeError on mainnet only: the chart's fmt(x, 1) with minimumFractionDigits 2, reached once 1Click has a price. Fixed; render errors now show a fallback.
+4. Wallets: MyNearWallet says "Sending, staking and app approvals have ended". Meteor's site blocks automated browsers.
+~~~

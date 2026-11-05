@@ -82,14 +82,14 @@ async function nonce(deadlineMs) {
 }
 
 /** @param {{deadlineMs?: number, verifyingContract?: string, rawV?: boolean}} options */
-async function sign(intent, options = {}) {
+async function sign(intents, options = {}) {
   const deadline = (await chainNow()) + (options.deadlineMs ?? 5 * 60_000);
   const payload = JSON.stringify({
     signer_id: address,
     verifying_contract: options.verifyingContract ?? INTENTS,
     deadline: new Date(deadline).toISOString(),
     nonce: await nonce(deadline),
-    intents: [intent],
+    intents: [intents].flat(),
   });
   const signature = personalSign(payload);
   if (!options.rawV) signature[64] -= 27;
@@ -163,8 +163,36 @@ assert.match(failures(refused.body.outcome), /ERR_NOT_WRITER/);
 assert.equal(await balance(WNEAR), held, "refunded in full");
 line("200 relayed, refused on chain", `ERR_NOT_WRITER, wNEAR unchanged, tx ${refused.body.outcome.transaction.hash}`);
 
-// 4. What the relayer itself refuses, and why.
+// 4. Two exercises under one signature, each paying two transfers: the most the relayer's gas carries.
+const twoCalls = await relay(
+  await sign(
+    toOptions(WNEAR, 2n * WNEAR_ONE, {
+      action: "create",
+      kind: "call",
+      underlying: WNEAR,
+      quote: "nep141:tusdc.sandbox",
+      underlying_per_option: WNEAR_ONE.toString(),
+      strike_per_option: (2n * TUSDC_ONE).toString(),
+      expiry_ns: expiry.toString(),
+    }),
+  ),
+);
+assert.equal(twoCalls.status, 200, JSON.stringify(twoCalls.body));
+const pairSeries = (await view(OPTIONS, "get_series_list", { limit: "100" })).at(-1);
+const exercise = toOptions("nep141:tusdc.sandbox", 2n * TUSDC_ONE, { action: "exercise", series_id: pairSeries.series_id, amount: "1" });
+const pair = await relay(await sign([exercise, exercise]));
+assert.equal(pair.status, 200, JSON.stringify(pair.body));
+assert.equal(failures(pair.body.outcome), "[]");
+const exercised = await view(OPTIONS, "get_series", { series_id: pairSeries.series_id });
+assert.equal(exercised.exercised, "2");
+assert.equal(exercised.collateral_held, "0");
+const paid = pair.body.outcome.receipts_outcome.reduce((sum, r) => sum + BigInt(r.outcome.gas_burnt), BigInt(pair.body.outcome.transaction_outcome.outcome.gas_burnt));
+line("200 two exercises, one signature", `burnt ${Number(paid / 10n ** 11n) / 10} TGas of the relayer's prepaid gas, tx ${pair.body.outcome.transaction.hash}`);
+
+// 5. What the relayer itself refuses, and why.
+const three = toOptions(WNEAR, 1n, { action: "write", series_id: "1" });
 const cases = [
+  ["three intents under one signature", sign([three, three, three]), 400, /One to 2 intents/],
   ["a transfer to another account with a msg", sign({ intent: "transfer", receiver_id: "alice.sandbox", tokens: { [WNEAR]: "1" }, msg: "{}" }), 400, /Warrant action/],
   ["a plain wNEAR transfer out", sign({ intent: "transfer", receiver_id: "bob.sandbox", tokens: { [WNEAR]: "1" } }), 400, /Warrant action/],
   ["an auth_call to another contract", sign({ intent: "auth_call", contract_id: "wrap.sandbox", msg: "{}" }), 400, /Warrant action/],

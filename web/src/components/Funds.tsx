@@ -17,8 +17,8 @@ interface FormProps {
   onSubmit: (calls: Call[]) => void;
 }
 
-/** 0.05 NEAR kept back from a NEAR deposit for gas and storage. */
-const NEAR_RESERVE = 50_000_000_000_000_000_000_000n;
+/** 0.15 NEAR kept back from a NEAR deposit: the chain holds its 130 TGas until it finishes, then returns nearly all of it. */
+const NEAR_RESERVE = 150_000_000_000_000_000_000_000n;
 
 function Summary({ children }: { children: ReactNode }) {
   return <p className="min-h-[3em] text-ui leading-relaxed text-iron-2">{children}</p>;

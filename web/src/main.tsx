@@ -6,6 +6,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // The dev server only (builds drop it): the devnet's test EVM wallet (lib/devnetEvm.ts, D-030).
 if (import.meta.env.DEV && import.meta.env.VITE_NETWORK === "sandbox") void import("./lib/devnetEvm");
@@ -15,6 +16,8 @@ if (!root) throw new Error("#root is missing from index.html");
 
 createRoot(root).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 );
