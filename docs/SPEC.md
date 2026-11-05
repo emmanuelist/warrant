@@ -110,6 +110,8 @@ Any other `msg` is refused with `ERR_BAD_MSG`. Payouts go to the signer's Intent
 | `ERR_OVERFLOW` | Arithmetic overflow |
 
 ## Invariants (tested)
+Each also holds across randomized sequences (`src/tests/invariants.rs`, E-028), where the third is exact and checked against the `mt_transfer` promises each call schedules.
+
 1. For each series, until `reclaim_collateral`: `collateral_held == long_supply × collateral_per_option`. Escrowed longs count in `long_supply`.
 2. `proceeds_held == exercised × payment_per_option − withdrawn_proceeds`.
 3. This contract's Intents balance of each token ≥ Σ over series of (`collateral_held` + `proceeds_held`) in that token, plus Σ `owed` in that token.
