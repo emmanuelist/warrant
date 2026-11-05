@@ -2,12 +2,12 @@
 _Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) · repo: public `emmanuelist/warrant` since 2026-11-05 (E-037, D-047)_
 
 **Name:** Warrant (D-014). **Thesis:** Options that can't default and need no oracle: the collateral is locked inside NEAR Intents until expiry.
-**Milestone:** M4, submitted 2026-11-05 (E-039); only the phone check is left. M1, M2 and M3 met on 2026-11-05 · **Results:** by 2026-11-18 23:59 UTC
+**Milestone:** M1 to M4 all met on 2026-11-05; M4's phone check by the user's report (E-040) · **Results:** by 2026-11-18 23:59 UTC
 **Live:** https://warrant-options.vercel.app · contract `warrant-options.near` (E-031), [source verified and locked on NearBlocks](https://nearblocks.io/address/warrant-options.near/contract/code) (E-037)
 **Next action:** re-scan rivals on 2026-11-07 (#12). Keep the repo public, the post up and the hosted demo live to 2026-11-25 (Q-012), and check the relayer's allowance before judging ends. Never submit again: a mistake goes through https://nearhackathon.com/request-changes. From 2026-11-26: the wind-down and the return of funds (#25).
 
 Claude provides the wallet and records the video. The user only funds, posts on X and confirms the payload (D-036). The demo winds down from 2026-11-26 (#25). What the proof has to beat: D-037 (#18, #22).
-**Waiting on the user:** opening the post's links on a phone with Wi-Fi off (M4). What was submitted is in `internal/submission/`, and the funds' destination is theirs to give at return time.
+**Waiting on the user:** nothing until results. What was submitted is in `internal/submission/`, and the funds' destination is theirs to give at return time.
 
 Vercel hosts the page and relayer. Deploy with `vercel build --prod --yes` and `vercel deploy --prebuilt --prod --yes` in `web/`; `vercel link` leaves a `web/.env.local` and `web/.gitignore` to delete. Narration uses an ElevenLabs key read at run time and never copied here (the user agreed to both, 2026-11-05).
 
