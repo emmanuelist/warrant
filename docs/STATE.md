@@ -1,5 +1,5 @@
 # State
-_Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) · repo: public, https://github.com/emmanuelist/warrant (D-039)_
+_Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) · repo: private `emmanuelist/warrant`, opens when the build is finished (D-039)_
 
 **Name:** Warrant (D-014). **Thesis:** Options that can't default and need no oracle: the collateral is locked inside NEAR Intents until expiry.
 **Milestone:** M1, due 2026-11-05 23:59 UTC · **Deadline:** 2026-11-14 23:59 UTC · 9 days left on 2026-11-05
@@ -18,6 +18,7 @@ The web app and relayer go on Vercel, and narration uses an ElevenLabs key read 
 ## Works (verified this session)
 | Capability | Verified by | Evidence |
 |---|---|---|
+| CI on GitHub: both jobs green on `main` (2026-11-05) | [run 41988517094](https://github.com/emmanuelist/warrant/actions/runs/41988517094) | E-030 |
 | The history split by area, each commit checked, a fresh clone green; two reproducible Docker builds of the previous contract byte-identical (2026-11-05) | Gate per commit, `cargo near build reproducible-wasm` | E-025, E-026 |
 | Refusal room on the devnet (D-037, 2026-11-05): 28 real attempts reach all 26 named refusals, 3 honest calls go through, refused attempts move no money, and the app reads all 30 back from chain. **Not yet sent on mainnet** | `scripts/run.mjs room`, Playwright, axe-core, impeccable detect | E-027, E-029 |
 | The deploy rehearsed, nothing spent (2026-11-05): a fresh clone passes the CI steps; every `scripts/run.mjs` step runs on the devnet with real refusals refunded in full; a NEP-413 signature over a live 1Click intent passes mainnet `simulate_intents`; the relayer as `vercel build` emits it passes the relay check on the devnet; the README's steps work in a browser | `scripts/run.mjs`, `swap-check`, `web/scripts/relay-check.mjs`, Playwright | E-024 |
