@@ -11,6 +11,8 @@ import { readFileSync } from "node:fs";
 const CONTRACT = "warrant-options.near";
 const CODE_HASH = "DADQfyxqwetsaZBh5n7JEQ8MnwZKQiqzCxaS465svgYz";
 const SOURCE = "https://github.com/emmanuelist/warrant/tree/f14416969258a8f1aa6073adddb57d961f126b57";
+// SourceScan's contract: its backend rebuilds a public repo and writes down what it got.
+const VERIFIER = "v2-verifier.sourcescan.near";
 // Live Intents and wNEAR, as tests/common/mod.rs pins them for the sandbox suites.
 const PINS = { "intents.near": "BtA1BEFNS619KkvXFsgcpQ21Tb5yMm32aaUkn7xNothk", "wrap.near": "DL2f5xmZ44cQRP6vBMt94rvseH5d5KKnAGis2WkTAsh1" };
 const SITE = "https://warrant-options.vercel.app";
@@ -91,6 +93,8 @@ const onChain = await account(CONTRACT);
 check(onChain.code_hash === CODE_HASH, "contract code", `${CONTRACT} code_hash ${onChain.code_hash}`);
 const metadata = await view(CONTRACT, "contract_source_metadata");
 check(metadata.link === SOURCE, "contract source (NEP-330)", metadata.link);
+const rebuilt = await view(VERIFIER, "get_contract", { account_id: CONTRACT });
+check(rebuilt?.code_hash === CODE_HASH, "rebuilt by a third party", `${VERIFIER} records ${rebuilt?.code_hash}`);
 
 // Nobody can change it, once the keys are gone.
 const contractKeys = await keys(CONTRACT);
