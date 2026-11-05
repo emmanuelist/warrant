@@ -11,7 +11,9 @@
  *   node scripts/run.mjs swap <near>                  mainnet: writer swaps wNEAR to USDC inside Intents through 1Click
  *   node scripts/run.mjs swap-check                   mainnet: signs a real 1Click intent and only simulates it (free)
  *   node scripts/run.mjs [--devnet] share <usdc>      writer: move USDC to the holder inside Intents
+ *   node scripts/run.mjs seed-base <0x> <usdc> <gas>  mainnet: writer pays a 0x wallet on Base through 1Click: USDC, and <gas> USDC's worth of ETH
  *   node scripts/run.mjs [--devnet] write             writer: the long-dated series and its offer
+ *   node scripts/run.mjs [--devnet] list <series> <n> <usdc>  writer: offer n of their longs at a price per option
  *   node scripts/run.mjs [--devnet] room              every attempt in web/src/lib/room.json, sent for
  *                                                     real; writes VITE_REFUSAL_TXS to the web env file
  */
@@ -26,7 +28,7 @@ import { signAndSend } from "../web/src/lib/nearTx.ts";
 const args = process.argv.slice(2);
 const devnet = args[0] === "--devnet";
 if (devnet) args.shift();
-const [command, amountArg] = args;
+const [command, amountArg, ...rest] = args;
 
 const TGAS = 10n ** 12n;
 // A transaction's gas is charged up front at 0.001 NEAR per TGas and the unused part refunded, so
@@ -90,6 +92,8 @@ function readdirSafe(dir) {
 }
 
 const wnear = `nep141:${net.wrap}`;
+const BASE_USDC = "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near";
+const BASE_ETH = "nep141:base.omft.near";
 const rpc = (method, params) => anyNode(net.rpcs, (url) => rpcAt(url, method, params));
 const view = (account, method, params = {}) => anyNode(net.rpcs, (url) => viewAt(url, account, method, params));
 
@@ -229,25 +233,19 @@ const steps = {
     if (devnet) throw new Error("1Click is mainnet-only");
     if (!amountArg) throw new Error("swap <near>");
     const amount = (BigInt(Math.round(Number(amountArg) * 1_000_000)) * NEAR_ONE) / 1_000_000n;
-    const { depositAddress, intent, quote } = await oneClickIntent(amount);
-    const signature = await signNep413(intent.payload, net.key(net.writer));
-    const signed = { ...intent, ...signature };
-    console.log(`quote: ${quote.amountInFormatted} wNEAR → ${quote.amountOutFormatted} USDC`);
-    await view(net.intents, "simulate_intents", { signed: [signed] });
-    const { intentHash } = await oneClick("/submit-intent", { type: "swap_transfer", signedData: signed });
-    console.log(`submitted: ${intentHash}`);
-    for (let waited = 0; waited < 180; waited += 5) {
-      await new Promise((resolve) => setTimeout(resolve, 5_000));
-      const { status, swapDetails } = await oneClick(`/status?depositAddress=${encodeURIComponent(depositAddress)}`);
-      console.log(`${waited + 5}s: ${status}`);
-      if (status === "SUCCESS") {
-        console.log(`near txs: ${JSON.stringify(swapDetails?.nearTxHashes ?? [])}`);
-        console.log(`writer USDC inside Intents: ${await balanceIn(net.writer, net.usdc)}`);
-        return;
-      }
-      if (status === "REFUNDED" || status === "FAILED") throw new Error(`1Click: ${status} ${swapDetails?.refundReason ?? ""}`);
-    }
-    throw new Error("1Click: no final status in three minutes");
+    await settleIntent(await oneClickIntent(amount), "wNEAR", "USDC");
+    console.log(`writer USDC inside Intents: ${await balanceIn(net.writer, net.usdc)}`);
+  },
+
+  /** Seeds a wallet on Base from the writer's balance, disclosed as such: how a demo wallet gets money to bring back. */
+  async "seed-base"() {
+    if (devnet) throw new Error("1Click is mainnet-only");
+    const [usdc, gas] = rest.map((text) => BigInt(Math.round(Number(text) * 1_000_000)));
+    if (!/^0x[0-9a-f]{40}$/.test(amountArg ?? "") || usdc === undefined || gas === undefined) throw new Error("seed-base <0x> <usdc> <gas>");
+    const toBase = { origin: net.usdc, recipient: amountArg, recipientType: "DESTINATION_CHAIN" };
+    await settleIntent(await oneClickIntent(usdc, { ...toBase, destination: BASE_USDC }), "USDC", "USDC on Base");
+    await settleIntent(await oneClickIntent(gas, { ...toBase, destination: BASE_ETH }), "USDC", "ETH on Base");
+    console.log(`writer USDC inside Intents: ${await balanceIn(net.writer, net.usdc)}`);
   },
 
   /** Costs nothing: proves the NEP-413 signature is what Intents expects before any funds exist. */
@@ -276,6 +274,14 @@ const steps = {
       memo: null,
     });
     console.log(`holder USDC inside Intents: ${await balanceIn(net.holder, net.usdc)}`);
+  },
+
+  async list() {
+    const [count, price] = rest;
+    if (!amountArg || !count || !price) throw new Error("list <series> <n> <usdc>");
+    const pricePerOption = BigInt(Math.round(Number(price) * 1_000_000));
+    await ok(`offer ${count} of series ${amountArg}`, net.writer, net.options, "list", { series_id: amountArg, amount: count, price_per_option: pricePerOption.toString() });
+    console.log(JSON.stringify((await view(net.options, "get_offers", { from_index: "0", limit: "100" })).at(-1)));
   },
 
   async write() {
@@ -415,23 +421,45 @@ async function oneClick(path, body) {
 }
 
 /** A live quote (never dry: only a live one has a deposit address) and its unsigned intent. Moves nothing. */
-async function oneClickIntent(amount) {
+async function oneClickIntent(amount, { origin = wnear, destination = net.usdc, recipient = net.writer, recipientType = "INTENTS" } = {}) {
   const { quote } = await oneClick("/quote", {
     dry: false,
     swapType: "EXACT_INPUT",
     slippageTolerance: 100,
-    originAsset: wnear,
+    originAsset: origin,
     depositType: "INTENTS",
-    destinationAsset: net.usdc,
+    destinationAsset: destination,
     amount: amount.toString(),
     refundTo: net.writer,
     refundType: "INTENTS",
-    recipient: net.writer,
-    recipientType: "INTENTS",
+    recipient,
+    recipientType,
     deadline: new Date(Date.now() + 30 * 60_000).toISOString(),
   });
   const { intent } = await oneClick("/generate-intent", { type: "swap_transfer", standard: "nep413", signerId: net.writer, depositAddress: quote.depositAddress });
   return { depositAddress: quote.depositAddress, intent, quote };
+}
+
+/** Signs an intent as the writer, simulates it, submits it, and waits for 1Click's final word. */
+async function settleIntent({ depositAddress, intent, quote }, from, to) {
+  const signed = { ...intent, ...(await signNep413(intent.payload, net.key(net.writer))) };
+  console.log(`quote: ${quote.amountInFormatted} ${from} → ${quote.amountOutFormatted} ${to}`);
+  await view(net.intents, "simulate_intents", { signed: [signed] });
+  const { intentHash } = await oneClick("/submit-intent", { type: "swap_transfer", signedData: signed });
+  console.log(`submitted: ${intentHash}`);
+  for (let waited = 0; waited < 180; waited += 5) {
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    const { status, swapDetails } = await oneClick(`/status?depositAddress=${encodeURIComponent(depositAddress)}`);
+    console.log(`${waited + 5}s: ${status}`);
+    if (status === "SUCCESS") {
+      console.log(`near txs: ${JSON.stringify(swapDetails?.nearTxHashes ?? [])}`);
+      const paid = swapDetails?.destinationChainTxHashes ?? [];
+      if (paid.length) console.log(`paid: ${paid.map((hop) => hop.explorerUrl || hop.hash).join(" ")}`);
+      return;
+    }
+    if (status === "REFUNDED" || status === "FAILED") throw new Error(`1Click: ${status} ${swapDetails?.refundReason ?? ""}`);
+  }
+  throw new Error("1Click: no final status in three minutes");
 }
 
 /** NEP-413: sha256 of the tag and the borsh-encoded {message, nonce, recipient, callbackUrl}, signed with ed25519. */

@@ -610,3 +610,13 @@ The P2s: the levers and the board contradicted the sheets; lamp colours broke "b
 
 **Consequences:** A NEAR wallet needs about 0.1 NEAR free to act, and the sheet says so below that. A NEAR deposit keeps 0.15 back.
 
+## D-042 · The relayer asks 70 TGas per intent · 2026-11-05 · accepted · supersedes the 140 in D-041
+**Context:** The first relayed actions on mainnet showed the arithmetic D-041 missed. A key's allowance has to cover the whole up-front charge on every send, and it falls by what each action really burns, about 0.0018 NEAR. At 140 TGas the charge is 0.1405 NEAR against an allowance of 0.15, so the relayer would have stopped after about five actions while holding plenty of balance.
+
+**Decision:** Ask for 70 TGas per intent, and at most two intents. One intent costs 0.0705 NEAR up front, so the current key has room for about 40 actions and a fresh key can be added for more. `web/scripts/relay-check.mjs` passes a single exercise and a reclaim through `on_auth` at 70, and two exercises under one signature at 140. When the relayer can't pay, it answers 503 and says so, because nothing is wrong with what was signed.
+
+**Alternatives:**
+- A larger allowance on a new key: more exposure if the key leaks, and the balance would have to grow with it. It stays available if the demo needs it.
+
+**Consequences:** Before the film and during the judging window, check the key's allowance (`near account list-keys`). Refilling means adding a new key and setting it on the host.
+

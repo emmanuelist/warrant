@@ -40,8 +40,11 @@ const TRANSFER_ACTIONS = new Set(["create", "write", "buy", "exercise"]);
 const AUTH_ACTIONS = new Set(["list", "cancel_offer", "close", "withdraw_proceeds", "reclaim_collateral", "retry_payout", "mt_transfer_call"]);
 const MAX_DEADLINE_MS = 15 * 60_000;
 const MAX_INTENTS = 2;
-/** Fits the key's 0.15 NEAR allowance, which has to cover 0.001 NEAR per TGas up front (docs/CONTEXT.md). */
-const GAS = 140_000_000_000_000n;
+/**
+ * The key's allowance has to cover 0.001 NEAR per TGas up front on every send, and it shrinks with
+ * each one, so asking for much more than a call needs would retire the key early (docs/CONTEXT.md).
+ */
+const GAS_PER_INTENT = 70_000_000_000_000n;
 /** Per signer, per instance: plenty for a person, too few to drain the gas allowance quickly. */
 const LIMIT = { count: 30, windowMs: 10 * 60_000 };
 
@@ -88,8 +91,8 @@ function touchesOnlyWarrant(intent: unknown, signer: string, cfg: RelayConfig): 
   }
 }
 
-/** Checks a signed payload and returns its signer, or throws `Refused`. */
-export function check(signed: unknown, cfg: RelayConfig, now = Date.now()): string {
+/** Checks a signed payload and returns its signer and how many intents it carries, or throws `Refused`. */
+export function check(signed: unknown, cfg: RelayConfig, now = Date.now()): { signer: string; intents: number } {
   if (!isRecord(signed) || typeof signed.standard !== "string" || !STANDARDS.has(signed.standard)) {
     throw new Refused(400, "Only erc191 payloads are relayed.");
   }
@@ -107,7 +110,7 @@ export function check(signed: unknown, cfg: RelayConfig, now = Date.now()): stri
     throw new Refused(400, `One to ${MAX_INTENTS} intents per payload.`);
   }
   if (!intents.every((intent) => touchesOnlyWarrant(intent, signer, cfg))) throw new Refused(400, "Every intent must be a Warrant action.");
-  return signer;
+  return { signer, intents: intents.length };
 }
 
 const recent = new Map<string, number[]>();
@@ -130,7 +133,7 @@ export async function relay(body: unknown, cfg: RelayConfig): Promise<Outcome> {
   const signed = isRecord(body) ? body.signed : undefined;
   // The node that answers first serves the rest of this request.
   const { node, nowMs } = await anyNode(cfg.rpcUrls, async (url) => ({ node: url, nowMs: await chainNowMs(url) }));
-  const signer = check(signed, cfg, nowMs);
+  const { signer, intents } = check(signed, cfg, nowMs);
   limit(signer, Date.now());
   try {
     await viewAt(node, cfg.intents, "simulate_intents", { signed: [signed] });
@@ -141,7 +144,7 @@ export async function relay(body: unknown, cfg: RelayConfig): Promise<Outcome> {
   }
   return signAndSend(node, cfg.secretKey, cfg.accountId, {
     receiverId: cfg.intents,
-    actions: [{ method: "execute_intents", args: { signed: [signed] }, gas: GAS, deposit: 0n }],
+    actions: [{ method: "execute_intents", args: { signed: [signed] }, gas: GAS_PER_INTENT * BigInt(intents), deposit: 0n }],
   });
 }
 
@@ -162,6 +165,10 @@ export async function handle(request: Request, cfg: RelayConfig): Promise<Respon
     return json(200, { outcome: await relay(body, cfg) });
   } catch (error) {
     if (error instanceof Refused) return json(error.status, { error: error.message });
+    // The relayer itself can't pay: say so, because nothing is wrong with what was signed.
+    if (/NotEnoughAllowance|NotEnoughBalance/.test(JSON.stringify(error instanceof RpcError ? error.detail : null))) {
+      return json(503, { error: "Warrant's relayer is out of gas for now. Nothing was sent. A NEAR wallet can still act directly." });
+    }
     return json(502, { error: error instanceof Error ? error.message : String(error) });
   }
 }

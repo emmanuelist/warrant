@@ -4,8 +4,8 @@ import { type ReactNode, useEffect, useState } from "react";
 
 import { base64ToBytes } from "../lib/base58";
 import type { Board } from "../lib/chain";
-import { config } from "../lib/config";
-import { isEvmAccount, personalSign } from "../lib/evm";
+import { config, explorer } from "../lib/config";
+import { EVM_CHAIN_IDS, isEvmAccount, personalSign, sendFromWallet } from "../lib/evm";
 import { account as short, parse } from "../lib/format";
 import {
   FINAL_STATUSES,
@@ -53,6 +53,29 @@ const CHAINS: Record<string, string> = {
 
 export const chainName = (code: string) => CHAINS[code] ?? code.toUpperCase();
 
+/** 1Click's status answers with `explorerUrl: ""` (E-032), so transaction links are built here, by chain name. */
+const EXPLORERS: Record<string, string> = {
+  Ethereum: "https://etherscan.io/tx/",
+  Base: "https://basescan.org/tx/",
+  Arbitrum: "https://arbiscan.io/tx/",
+  Optimism: "https://optimistic.etherscan.io/tx/",
+  Polygon: "https://polygonscan.com/tx/",
+  "BNB Chain": "https://bscscan.com/tx/",
+  Avalanche: "https://snowscan.xyz/tx/",
+  Gnosis: "https://gnosisscan.io/tx/",
+  Solana: "https://solscan.io/tx/",
+  Bitcoin: "https://mempool.space/tx/",
+  TON: "https://tonviewer.com/transaction/",
+  TRON: "https://tronscan.org/#/transaction/",
+};
+const NEAR_CHAIN = "NEAR";
+
+function hopUrl(hop: { hash: string; explorerUrl: string }, chain: string): string | null {
+  if (hop.explorerUrl) return hop.explorerUrl;
+  if (chain === NEAR_CHAIN) return explorer?.tx(hop.hash) ?? null;
+  return EXPLORERS[chain] ? `${EXPLORERS[chain]}${hop.hash}` : null;
+}
+
 /** Assets offered as the other end of a route: the same symbol first, then the majors. */
 const MAJORS = ["USDC", "USDT", "ETH", "BTC", "SOL"];
 
@@ -62,6 +85,14 @@ function routable(tokens: RemoteToken[], symbol: string | undefined): RemoteToke
     .filter((t) => t.blockchain !== "near" && (t.symbol === symbol || MAJORS.includes(t.symbol)))
     .sort((a, b) => rank(a) - rank(b) || chainName(a.blockchain).localeCompare(chainName(b.blockchain)));
 }
+
+/** The route a form opens on: the asset's own on Base, else USDC on Base, where most wallets hold it. */
+function preferred(tokens: RemoteToken[], symbol: string | undefined): RemoteToken | undefined {
+  return tokens.find((t) => t.symbol === symbol && t.blockchain === "base") ?? tokens.find((t) => t.symbol === "USDC" && t.blockchain === "base") ?? tokens[0];
+}
+
+/** An EVM wallet's own address is the natural refund or recipient on any chain it can act on. */
+const ownAddress = (viewer: string | null, token: RemoteToken | undefined) => (viewer && isEvmAccount(viewer) && token && EVM_CHAIN_IDS[token.blockchain] ? viewer : "");
 
 function useRemoteTokens() {
   const [state, setState] = useState<{ tokens: RemoteToken[] | null; error: string | null }>({ tokens: null, error: null });
@@ -109,9 +140,10 @@ export function CrossChainIn({ board, viewer, tokenId }: { board: Board; viewer:
   const destination = board.tokens[tokenId];
   const sources = tokens ? routable(tokens, destination?.symbol) : [];
   const [sourceId, setSourceId] = useState("");
-  const source = sources.find((t) => t.assetId === sourceId) ?? sources[0];
+  const source = sources.find((t) => t.assetId === sourceId) ?? preferred(sources, destination?.symbol);
   const [text, setText] = useState("");
-  const [refund, setRefund] = useState("");
+  const [typedRefund, setRefund] = useState<string | null>(null);
+  const refund = typedRefund ?? ownAddress(viewer, source);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [quoted, setQuoted] = useState<{ quote: Quote; source: RemoteToken } | null>(null);
@@ -121,7 +153,7 @@ export function CrossChainIn({ board, viewer, tokenId }: { board: Board; viewer:
   if (error) return <Problem message={`1Click didn't answer: ${error}`} />;
   if (!tokens) return <p className="text-iron-2">Reading 1Click routes…</p>;
   if (quoted?.quote.depositAddress) {
-    return <DepositAddress quote={quoted.quote} source={quoted.source} destination={destination?.symbol ?? tokenId} />;
+    return <DepositAddress quote={quoted.quote} source={quoted.source} destination={destination?.symbol ?? tokenId} viewer={viewer} />;
   }
 
   return (
@@ -188,11 +220,28 @@ export function CrossChainIn({ board, viewer, tokenId }: { board: Board; viewer:
   );
 }
 
-function DepositAddress({ quote: q, source, destination }: { quote: Quote; source: RemoteToken; destination: string }) {
+function DepositAddress({ quote: q, source, destination, viewer }: { quote: Quote; source: RemoteToken; destination: string; viewer: string | null }) {
   const address = q.depositAddress ?? "";
   const [copied, setCopied] = useState(false);
   const [txHash, setTxHash] = useState("");
   const [notified, setNotified] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
+  const canPay = viewer !== null && isEvmAccount(viewer) && EVM_CHAIN_IDS[source.blockchain] !== undefined;
+  const pay = async () => {
+    if (!viewer) return;
+    setPaying(true);
+    setNotified(null);
+    try {
+      const hash = await sendFromWallet(viewer, source.blockchain, source.contractAddress, address, BigInt(q.amountIn));
+      setTxHash(hash);
+      await submitDeposit(address, hash);
+      setNotified("Sent. 1Click has the transaction.");
+    } catch (error) {
+      setNotified(message(error));
+    } finally {
+      setPaying(false);
+    }
+  };
   return (
     <div className="flex flex-col gap-4">
       <div className="border-y border-rule py-4">
@@ -200,19 +249,32 @@ function DepositAddress({ quote: q, source, destination }: { quote: Quote; sourc
           Send exactly {q.amountInFormatted} {source.symbol} on {chainName(source.blockchain)} to
         </Label>
         <p className="fig mt-2 break-all text-body text-iron">{address}</p>
-        <button
-          type="button"
-          className="plate-label mt-3 inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-meta shadow-[inset_0_0_0_1.5px_var(--color-iron)] hover:bg-bed"
-          onClick={() => {
-            void navigator.clipboard.writeText(address).then(() => {
-              setCopied(true);
-              window.setTimeout(() => setCopied(false), 1800);
-            });
-          }}
-        >
-          {copied ? <CheckIcon weight="bold" size="1.1em" className="text-live" aria-hidden="true" /> : <CopyIcon weight="bold" size="1.1em" aria-hidden="true" />}
-          <span aria-live="polite">{copied ? "Copied" : "Copy address"}</span>
-        </button>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {canPay && (
+            <button
+              type="button"
+              disabled={paying || txHash !== ""}
+              data-tone="iron"
+              className="enamel plate-label h-9 rounded-full px-3.5 text-meta transition-[opacity,translate] duration-150 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => void pay()}
+            >
+              {paying ? "Check your wallet…" : `Send from your wallet`}
+            </button>
+          )}
+          <button
+            type="button"
+            className="plate-label inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-meta shadow-[inset_0_0_0_1.5px_var(--color-iron)] hover:bg-bed"
+            onClick={() => {
+              void navigator.clipboard.writeText(address).then(() => {
+                setCopied(true);
+                window.setTimeout(() => setCopied(false), 1800);
+              });
+            }}
+          >
+            {copied ? <CheckIcon weight="bold" size="1.1em" className="text-live" aria-hidden="true" /> : <CopyIcon weight="bold" size="1.1em" aria-hidden="true" />}
+            <span aria-live="polite">{copied ? "Copied" : "Copy address"}</span>
+          </button>
+        </div>
         <p className="mt-3 text-meta text-iron-2">
           Send it with a plain transfer from your wallet before <span className="fig text-iron">{q.validUntil.slice(11, 16)} UTC</span>. 1Click
           doesn't guarantee transfers that arrive through a bridge, and less than the quoted amount is reported as incomplete.
@@ -267,10 +329,11 @@ export function CrossChainOut({ board, viewer, tokenId, onSettled }: { board: Bo
   const origin = board.tokens[tokenId];
   const destinations = tokens ? routable(tokens, origin?.symbol) : [];
   const [destinationId, setDestinationId] = useState("");
-  const destination = destinations.find((t) => t.assetId === destinationId) ?? destinations[0];
+  const destination = destinations.find((t) => t.assetId === destinationId) ?? preferred(destinations, origin?.symbol);
   const balance = board.viewer?.inIntents[tokenId] ?? null;
   const [text, setText] = useState("");
-  const [recipient, setRecipient] = useState("");
+  const [typedRecipient, setRecipient] = useState<string | null>(null);
+  const recipient = typedRecipient ?? ownAddress(viewer, destination);
   const [step, setStep] = useState<"form" | "quoting" | "quoted" | "signing" | "tracking">("form");
   const [problem, setProblem] = useState<string | null>(null);
   const [prepared, setPrepared] = useState<Prepared | null>(null);
@@ -452,15 +515,22 @@ function stepsFor(transfer: Transfer | undefined, state: StatusResponse | null):
   const reached = (statuses: TransferStatus[]) => (s ? statuses.includes(s) : false);
   const seen = reached(["KNOWN_DEPOSIT_TX", "PROCESSING", "SUCCESS", "REFUNDED", "FAILED"]);
   const routing = reached(["PROCESSING", "SUCCESS", "REFUNDED", "FAILED"]);
-  const hops = (list: { hash: string; explorerUrl: string }[] | undefined) =>
+  const hops = (list: { hash: string; explorerUrl: string }[] | undefined, on: string) =>
     list && list.length > 0 ? (
       <span className="flex flex-wrap gap-x-3">
-        {list.map((hop) => (
-          <a key={hop.hash} className="fig underline decoration-rule underline-offset-4 hover:decoration-iron" href={hop.explorerUrl} target="_blank" rel="noreferrer">
-            {hop.hash.slice(0, 10)}…
-            <Out />
-          </a>
-        ))}
+        {list.map((hop) => {
+          const url = hopUrl(hop, on);
+          return url ? (
+            <a key={hop.hash} className="fig underline decoration-rule underline-offset-4 hover:decoration-iron" href={url} target="_blank" rel="noreferrer">
+              {hop.hash.slice(0, 10)}…
+              <Out />
+            </a>
+          ) : (
+            <span key={hop.hash} className="fig">
+              {hop.hash.slice(0, 10)}…
+            </span>
+          );
+        })}
       </span>
     ) : null;
 
@@ -491,7 +561,7 @@ function stepsFor(transfer: Transfer | undefined, state: StatusResponse | null):
         ? out
           ? "1Click usually picks it up within seconds."
           : `Send before ${transfer.validUntil.slice(11, 16)} UTC.`
-        : hops(state?.swapDetails.originChainTxHashes),
+        : hops(state?.swapDetails.originChainTxHashes, out ? NEAR_CHAIN : chain),
     state: incomplete ? "failed" : seen ? "done" : "current",
   };
   const finished = s === "SUCCESS" || s === "REFUNDED" || s === "FAILED";
@@ -522,7 +592,7 @@ function stepsFor(transfer: Transfer | undefined, state: StatusResponse | null):
             note: s === "SUCCESS" ? (
               <span className="flex flex-wrap gap-x-3">
                 {state?.swapDetails.amountOutFormatted && <span className="fig">{state.swapDetails.amountOutFormatted} received</span>}
-                {hops(state?.swapDetails.destinationChainTxHashes)}
+                {hops(state?.swapDetails.destinationChainTxHashes, out ? chain : NEAR_CHAIN)}
               </span>
             ) : undefined,
             state: s === "SUCCESS" ? "done" : "todo",

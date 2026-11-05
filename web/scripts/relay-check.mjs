@@ -163,7 +163,41 @@ assert.match(failures(refused.body.outcome), /ERR_NOT_WRITER/);
 assert.equal(await balance(WNEAR), held, "refunded in full");
 line("200 relayed, refused on chain", `ERR_NOT_WRITER, wNEAR unchanged, tx ${refused.body.outcome.transaction.hash}`);
 
-// 4. Two exercises under one signature, each paying two transfers: the most the relayer's gas carries.
+// 4. What a relayed action needs of the gas it's given: one exercise, then a reclaim through on_auth.
+const oneOption = async (expiryNs) => {
+  const made = await relay(
+    await sign(
+      toOptions(WNEAR, WNEAR_ONE, {
+        action: "create",
+        kind: "call",
+        underlying: WNEAR,
+        quote: "nep141:tusdc.sandbox",
+        underlying_per_option: WNEAR_ONE.toString(),
+        strike_per_option: (2n * TUSDC_ONE).toString(),
+        expiry_ns: expiryNs.toString(),
+      }),
+    ),
+  );
+  assert.equal(made.status, 200, JSON.stringify(made.body));
+  assert.equal(failures(made.body.outcome), "[]");
+  return (await view(OPTIONS, "get_series_list", { limit: "100" })).at(-1);
+};
+const single = await oneOption(expiry);
+const exercisedOne = await relay(await sign(toOptions("nep141:tusdc.sandbox", 2n * TUSDC_ONE, { action: "exercise", series_id: single.series_id, amount: "1" })));
+assert.equal(exercisedOne.status, 200, JSON.stringify(exercisedOne.body));
+assert.equal(failures(exercisedOne.body.outcome), "[]");
+assert.equal((await view(OPTIONS, "get_series", { series_id: single.series_id })).collateral_held, "0");
+line("200 one exercise", `paid both ways, tx ${exercisedOne.body.outcome.transaction.hash}`);
+
+const lapsing = await oneOption((BigInt(await chainNow()) + 90_000n) * 1_000_000n);
+while (!(await view(OPTIONS, "get_series", { series_id: lapsing.series_id })).expired) await new Promise((resolve) => setTimeout(resolve, 3_000));
+const reclaimed = await relay(await sign({ intent: "auth_call", contract_id: OPTIONS, msg: JSON.stringify({ action: "reclaim_collateral", series_id: lapsing.series_id }) }));
+assert.equal(reclaimed.status, 200, JSON.stringify(reclaimed.body));
+assert.equal(failures(reclaimed.body.outcome), "[]");
+assert.equal((await view(OPTIONS, "get_series", { series_id: lapsing.series_id })).collateral_held, "0");
+line("200 reclaim (auth_call -> on_auth)", `collateral back, tx ${reclaimed.body.outcome.transaction.hash}`);
+
+// 5. Two exercises under one signature, each paying two transfers: the most the relayer's gas carries.
 const twoCalls = await relay(
   await sign(
     toOptions(WNEAR, 2n * WNEAR_ONE, {
@@ -189,7 +223,7 @@ assert.equal(exercised.collateral_held, "0");
 const paid = pair.body.outcome.receipts_outcome.reduce((sum, r) => sum + BigInt(r.outcome.gas_burnt), BigInt(pair.body.outcome.transaction_outcome.outcome.gas_burnt));
 line("200 two exercises, one signature", `burnt ${Number(paid / 10n ** 11n) / 10} TGas of the relayer's prepaid gas, tx ${pair.body.outcome.transaction.hash}`);
 
-// 5. What the relayer itself refuses, and why.
+// 6. What the relayer itself refuses, and why.
 const three = toOptions(WNEAR, 1n, { action: "write", series_id: "1" });
 const cases = [
   ["three intents under one signature", sign([three, three, three]), 400, /One to 2 intents/],

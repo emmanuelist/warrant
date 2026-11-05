@@ -34,6 +34,7 @@ Append-only proof log. Every claim in the README, demo or submission points to a
 | E-029 | 2026-11-05 | `retire` returns the deposit and can't touch money (D-038). On the real runtime it deleted the account with 12,143 bytes of state, and the owner received the whole balance; without clearing its state first, it fails. In the random run, 255 of 256 sequences wound down to nothing and retired, and the other retired cleanly mid-sequence, so no money got stuck. All 6 bugs injected into `retire` were caught. The room rehearsal now has 28 attempts at all 26 named refusals, plus 3 honest calls. **Not on mainnet.** | Output below | `18-retire` |
 | E-030 | 2026-11-05 | The contract with `retire` reproduces and a fresh clone passes. Two Docker builds are byte-identical, 326,736 bytes, `code_hash GGvJPAmHR6RJr5NvN5Au5x16SvWp5ABKshteMfTGo6h`. A clone passes fmt, clippy, the wasm build, 78 unit tests, `sandbox` 3 and `signers` 1, plus web lint, typecheck and build. Those ran at `deaf217`, whose code `git diff` shows is unchanged by the rewrite in D-039. The hash embeds the commit, so mainnet gets its own build. The first CI run on GitHub, on `main`, passed both jobs. | Output below | `18-retire` |
 | E-031 | 2026-11-05 | Warrant is live on mainnet. `warrant-options.near` holds a series with its collateral inside `intents.near`, all 31 refusal-room attempts ended as `room.json` says, 1Click swapped real funds, and a real wallet (Intear, through near-connect) signed a real purchase from the hosted page. The first real runs also found what the devnet couldn't: gas is charged up front, the free node rate-limits an ordinary visit, and the page crashed once a price existed. All three are fixed | [Page](https://warrant-options.vercel.app) · [contract](https://nearblocks.io/address/warrant-options.near) · [wallet-signed buy](https://nearblocks.io/txns/CvMRoftt8jhibE7pchQvZ3JBb9bXnDXUNAkwzonseGPU) · room hashes in `web/.env.production`; output below | f303ca2 |
+| E-032 | 2026-11-05 | A wallet with no NEAR account did the whole round trip on mainnet through the hosted page and relayer: USDC in from Base, bought, exercised, wrote a put, and was paid back on Base. The same `0x` account appears on every leg. The relayer signed with its function-call key and spends about 0.0018 NEAR per action | [Paid on Base](https://basescan.org/tx/0xa3a88f87aa6663d4539a1a7151e93c9ddb441e79279d5096434298d34529f172) · [deposit](https://basescan.org/tx/0xbd6289cc629a617fd25d6f0ecadde052a58421a3eb2d67d8704deb31bb340b1e) · [relayed exercise](https://nearblocks.io/txns/EyQj34zmL54Cm3fCLW8AB6Qf9DFxRMNuRvSdVNRSoNw1); output below | (this branch) |
 
 ## E-001 output
 ~~~text
@@ -954,4 +955,40 @@ tx CvMRoftt8jhibE7pchQvZ3JBb9bXnDXUNAkwzonseGPU, read back: holder holds 1 long,
    With failover: board reads during a 429, 31 of 31 tx read at 2 at once.
 3. RangeError on mainnet only: the chart's fmt(x, 1) with minimumFractionDigits 2, reached once 1Click has a price. Fixed; render errors now show a fallback.
 4. Wallets: MyNearWallet says "Sending, staking and app approvals have ended". Meteor's site blocks automated browsers.
+~~~
+
+## E-032 output
+~~~
+Wallet 0x05db2855abc2d062934617ace3e39e864f977b0b: a fresh key, no NEAR account, signed by a local signer in the browser
+(an injected EIP-6963 wallet named "Demo signer (local key)"; a real extension's prompt is still unexercised).
+
+=== seeded from the demo's own balance, so it has money to bring back
+node scripts/run.mjs seed-base 0x05db... 0.6 0.05
+0.6 USDC -> 0.597478 USDC on Base   0xbd34fca4dfe64c9249810464357f58160b4ec635307fb65fc64eded7af3d4504   20 s
+0.05 USDC -> 0.0000201 ETH on Base  0x473078dfe2459dd5108318362b2bf4a26acb99693dda296f94f2cdd0f5e27741   25 s
+
+=== through https://warrant-options.vercel.app
+in     0.5 USDC, Base, from 0x05db... to the deposit address
+       0xbd6289cc629a617fd25d6f0ecadde052a58421a3eb2d67d8704deb31bb340b1e
+       0.499898 USDC in the wallet's Intents balance, CPRHDonnHzVTEwHUB5mkCAmmRp52rEGVEfmHpnTZn54b, 33 s
+buy    0.02 USDC, 1 long of series 1      AMbpVMg6XbMZxywmMDEJJiffdD32rQXSnSPZBXGKTGQA
+exercise  0.45 USDC, receives 0.1 wNEAR   EyQj34zmL54Cm3fCLW8AB6Qf9DFxRMNuRvSdVNRSoNw1
+out    0.1 wNEAR -> 0.398373 USDC on Base, to the same 0x05db..., 37 s after signing
+       0xa3a88f87aa6663d4539a1a7151e93c9ddb441e79279d5096434298d34529f172
+       near J5wDfRMRqnP6zHuZyGDPhm5KK9UCddG73apvepTAQrru DSHarhvY1ovUQ12QPy2UXixbm5ZLajsCbkyRt1wTV1nB FYXrE3jiscwNybNxnuqNFw1YfbmSduhKc1dZTvAbRDyg
+in     "Send from your wallet", the page asking the wallet to pay: 0.2 USDC,
+       0xcac4e18720f388ec0a69b1377a96d67a1f161c11b9ee0575a52fe1b7b4ce77f8, 0.199958 USDC, 7x81uwq4Djzgy2hhfupFjcc7op3HEhYt5FVtBRQo8Nsn, 48 s
+write  a put, 0.20 USDC locked to 2026-11-26   83iL1EDED9azK8GCgc8EJgqSPjGu994efF4u6SoPZPNH
+
+=== read back on chain
+Base receipts: deposit from 0x05db... ; payout to 0x05db... of 0.398373 USDC
+Buy and exercise: signer f6464d4e05..., key ed25519:D1aLLVXELe..., receiver intents.near, method execute_intents, 0 failed receipts, logs name 0x05db...
+Relayer key: {allowance 0.14647, receiver intents.near, methods [execute_intents]} after two actions, from 0.15
+One relayed exercise: 0.00175 NEAR burnt. Its 5 receipts of "7.52 Tgas" are refunds at 0 NEAR; the real work is about 17.5 Tgas.
+
+=== what this found
+1. The relayer's 140 Tgas needed 0.1405 NEAR up front while the allowance fell 0.0018 per action: about 5 actions in all. Now 70 Tgas per intent.
+   node web/scripts/relay-check.mjs on the devnet: one exercise, a reclaim through on_auth, and two exercises under one signature at 140.
+2. 1Click's status gives explorerUrl "" for every hop, so the timeline's links went nowhere. The page now builds them: BaseScan and NearBlocks above.
+3. Deposit form for an EVM wallet: opens on USDC on Base with the refund address filled in, and pays with one button.
 ~~~
