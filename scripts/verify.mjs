@@ -94,7 +94,7 @@ check(metadata.link === SOURCE, "contract source (NEP-330)", metadata.link);
 
 // Nobody can change it, once the keys are gone.
 const contractKeys = await keys(CONTRACT);
-if (contractKeys.length === 0) report("PASS", "contract keys", "none: nobody can deploy new code or delete this account");
+if (contractKeys.length === 0) report("PASS", "contract keys", "none: nobody can deploy new code, only its own retire can delete it");
 else report("NOTE", "contract keys", `${contractKeys.length} full-access key: new code could still be deployed, until the lock (docs/DECISIONS.md, D-035)`);
 
 // What Warrant sits on.

@@ -15,6 +15,8 @@
  *   node scripts/run.mjs [--devnet] write             writer: the long-dated series and its offer
  *   node scripts/run.mjs [--devnet] list <series> <n> <usdc>  writer: offer n of their longs at a price per option
  *   node scripts/run.mjs [--devnet] claim <series>    writer: collect the strike paid on a series
+ *   node scripts/run.mjs [--devnet] market            writer: a small call and put with offers, so a visitor finds something to buy
+ *   node scripts/run.mjs [--devnet] minimums          owner: raise the minimum to write a series to about $20 (D-045)
  *   node scripts/run.mjs [--devnet] room              every attempt in web/src/lib/room.json, sent for
  *                                                     real; writes VITE_REFUSAL_TXS to the web env file
  */
@@ -282,6 +284,37 @@ const steps = {
     if (!amountArg) throw new Error("claim <series>");
     await ok(`claim series ${amountArg}`, net.writer, net.options, "withdraw_proceeds", { series_id: amountArg });
     console.log(`writer USDC inside Intents: ${await balanceIn(net.writer, net.usdc)}`);
+  },
+
+  /** One small call and one small put, each with an offer, so the board has something to buy until the demo ends. */
+  async market() {
+    const size = NEAR_ONE / 20n;
+    const count = 2n;
+    const price = (USDC_ONE * 1n) / 100n;
+    const legs = [
+      ["call", wnear, size, (USDC_ONE * 225n) / 1000n],
+      ["put", net.usdc, (USDC_ONE * 18n) / 100n, (USDC_ONE * 18n) / 100n],
+    ];
+    for (const [kind, token, collateralPerOption, strike] of legs) {
+      await ok(`write ${count} ${kind}s`, ...viaIntents(net.writer, token, count * collateralPerOption, { ...createMsg(size, strike, DEMO_EXPIRY_NS), kind }));
+      const series = await latestSeries(net.writer);
+      if (series.kind !== kind) throw new Error(`the latest series is a ${series.kind}`);
+      await ok(`offer ${count} of series ${series.series_id}`, net.writer, net.options, "list", { series_id: series.series_id, amount: count.toString(), price_per_option: price.toString() });
+    }
+    console.log(JSON.stringify(await view(net.options, "get_offers", { from_index: "0", limit: "100" })));
+  },
+
+  /** About $20 of collateral to write a series (D-045): abandoning one then costs more than the deposit it would hold up. */
+  async minimums() {
+    const tokens = [
+      [wnear, NEAR_ONE * 5n],
+      [net.usdc, USDC_ONE * 20n],
+      ...(net.btc ? [[net.btc, 25_000n]] : []),
+    ];
+    for (const [token, min] of tokens) {
+      await ok(`minimum for ${token}`, net.owner, net.options, "allow_token", { token_id: token, min_amount: min.toString() }, YOCTO, 30n * TGAS);
+    }
+    console.log(JSON.stringify((await view(net.options, "get_config")).allowed_tokens));
   },
 
   async list() {
