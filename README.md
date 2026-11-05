@@ -30,7 +30,7 @@ cargo near build non-reproducible-wasm --abi-features abi
 cargo test -- --test-threads=1
 ```
 
-You see 71 unit tests pass, then the `sandbox` suite (2) and the `signers` suite (1). The sandbox suites download the live `intents.near` and `wrap.near` bytecode from mainnet and refuse to run if its hash differs from the pin in `tests/common/mod.rs`.
+You see 72 unit tests pass, then the `sandbox` suite (2) and the `signers` suite (1). One of the 72 runs 32,768 random steps across every action, checks the books after each against the transfers the contract actually schedules, and fails if any action or refusal was never reached (`cargo test invariants -- --nocapture` prints the counts). The sandbox suites download the live `intents.near` and `wrap.near` bytecode from mainnet and refuse to run if its hash differs from the pin in `tests/common/mod.rs`.
 
 - Refusals covered: early reclaim, late exercise, exercise without the option, unauthorized calls, wrong-token deposits, double exercise.
 - `signers` has a wallet with no NEAR account write, list, cancel, claim and reclaim through relayed `erc191` intents.

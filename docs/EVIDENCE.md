@@ -30,6 +30,7 @@ Append-only proof log. Every claim in the README, demo or submission points to a
 | E-025 | 2026-11-05 | The history split by area is the same work, checked commit by commit. Its tree equals the old single commit except for one reworded line in D-034. The contract commit passes fmt, clippy, the wasm build and 71 unit tests. The web layer passes lint and typecheck and fails `vite build` only for want of `index.html`, as its message says. The web app commit passes lint, typecheck and build. A fresh clone at the tip passes every CI step. A reproducible Docker build works on this machine and embeds its commit; its `code_hash` has not yet been compared across two builds. | Output below | `10-mainnet-runbook` |
 | E-026 | 2026-11-05 | The contract build reproduces: two Docker builds of pushed commit `1ffcc9f` are byte-identical, 323,125 bytes, `code_hash CPKpW1fWrJmpWXLudZP4yuYxHy9Y36tfzwqgs6zuMTng`, and the wasm names that commit. The private repo exists, with 22 issues numbered as the docs cite them. | Output below | `1ffcc9f` |
 | E-027 | 2026-11-05 | The refusal room works on the devnet against byte-identical Intents and wNEAR. `scripts/run.mjs room` sent 27 attempts that reached all 25 refusals the contract names, plus 3 honest calls that went through. Refused attempts moved no money. The app reads all 30 back from chain: 27 refused by name, 3 went through, 0 off their rule. A wrong transaction shows as off its rule, a hash that doesn't exist as unread, and an unrecorded network says so. No overflow at 390 or 1440, 0 axe violations, 0 detector anti-patterns. **Mainnet: not yet sent.** | Output below | `20-refusal-room` |
+| E-028 | 2026-11-05 | The invariants hold across 32,768 random steps in 256 sequences, in 12 s. Every action was accepted and all 25 refusals were reached, and the run fails if any wasn't. The money is checked against the `mt_transfer` promises each call actually schedules, and refused calls roll back from a storage snapshot, as on chain. It catches real bugs: all 6 deliberately injected ones failed within 113 steps, including removing the time lock. | Output below | `21-invariants` |
 
 ## E-001 output
 ~~~text
@@ -826,4 +827,34 @@ Off-rule test (a row pointed at the honest buy's hash):  "went through, expected
 Unknown hash test:                                       "couldn't read it just now" · "1 couldn't be read just now"
 Nothing recorded:                                        every row "not recorded yet", the read button disabled, the intro says so
 impeccable detect: 0 anti-patterns; advisories are the dial's known layering false positives, nested cards and stripes
+~~~
+
+## E-028 output
+~~~
+cargo test --lib invariants -- --nocapture
+32768 steps across 256 sequences; 2683 payouts landed, 402 failed and stayed owed
+accepted: buy 669 · cancel_offer 384 · close 498 · create 3268 · exercise 1306 · list 1029 · mt_transfer 404
+          reclaim_collateral 280 · retry_payout 118 · withdraw_proceeds 258 · write 1598
+refused:  ALREADY_RECLAIMED 96 · APPROVALS_NOT_SUPPORTED 225 · BAD_EXPIRY 673 · BAD_MSG 165 · BATCH_NOT_SUPPORTED 535
+          BELOW_MIN 441 · EXPIRED 1860 · INSUFFICIENT_LONGS 3036 · INSUFFICIENT_PAYMENT 415 · LENGTH_MISMATCH 542
+          NOTHING_TO_PAY 2040 · NOT_EXPIRED 1655 · NOT_INTENTS 1114 · NOT_OWNER 501 · NOT_SELLER 79 · NOT_WRITER 940
+          OFFER_AMOUNT 172 · OVERFLOW 35 · SAME_TOKEN 321 · SELF_TRANSFER 830 · TOKEN_NOT_ALLOWED 349 · UNKNOWN_OFFER 3628
+          UNKNOWN_SERIES 2526 · WRONG_TOKEN 698 · ZERO 80
+test result: ok. 1 passed
+
+Checked after every accepted step:
+  each series fully backed until reclaimed; proceeds = exercised x payment - withdrawn
+  every long in someone's hands or in escrow behind an offer
+  the contract's balance inside Intents = collateral + proceeds + owed, per token, to the unit
+  collateral leaves only by exercise before expiry, the writer closing before expiry, or the writer reclaiming after
+  every scheduled payout goes to the account entitled to it
+  a panic that isn't a named ERR_* fails the run
+
+Injected bugs (each reverted; contract source unchanged):
+time lock removed                    seed 1 step 27: series 2 reclaimed before expiry
+anyone may reclaim                   seed 1 step 113: reclaim_collateral paid the wrong account
+exercise after expiry allowed        seed 1 step 75: series 3 exercised after expiry
+one unit of collateral lost          seed 1 step 13: exercise panicked with something other than a named refusal: attempt to subtract with overflow
+exercise refunds one too many        seed 1 step 13: nep141:usdc.near inside Intents doesn't match the books
+the premium goes to the buyer        seed 1 step 43: buy paid the wrong account
 ~~~
