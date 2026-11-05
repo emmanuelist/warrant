@@ -1,0 +1,30 @@
+[package]
+name = "test-token"
+description = "Sandbox-only NEP-141 test dollar (symbol tUSDC, 6 decimals) for Warrant's tests and local devnet. Never deployed to mainnet."
+version = "0.1.0"
+edition = "2024"
+resolver = "3"
+rust-version = "1.97"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk = "5.29.1"
+near-contract-standards = "5.29.1"
+
+[dev-dependencies]
+near-sdk = { version = "5.29.1", features = ["unit-testing"] }
+
+[profile.release]
+codegen-units = 1
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+overflow-checks = true
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = ['cfg(near)']
