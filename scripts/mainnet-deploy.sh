@@ -36,6 +36,13 @@ exists() {
 
 only_file() { find "$1" -maxdepth 1 -name '*.json' 2>/dev/null | head -1; }
 
+# `near tokens send-near` stops to ask for confirmation when the receiver doesn't exist yet, which a
+# script can't answer. A new implicit account comes into being with this transfer.
+send_near() {
+  near transaction construct-transaction "$OWNER" "$1" add-action transfer "$2" skip \
+    network-config mainnet sign-with-access-key-file "$OWNER_KEY" send
+}
+
 new_key_file() {
   [ -n "$(only_file "$1")" ] && return
   mkdir -p "$1"
@@ -67,14 +74,14 @@ contract)
 holder)
   id="$(basename "$(only_file "$HOLDER_DIR")" .json)"
   [ -n "$id" ] || { echo "Run: scripts/mainnet-deploy.sh accounts" >&2; exit 1; }
-  near tokens "$OWNER" send-near "$id" "$HOLDER_NEAR" network-config mainnet sign-with-access-key-file "$OWNER_KEY" send
+  send_near "$id" "$HOLDER_NEAR"
   ;;
 
 relayer)
   file="$(only_file "$RELAYER_DIR")"
   id="$(basename "$file" .json)"
   [ -n "$id" ] || { echo "Run: scripts/mainnet-deploy.sh accounts" >&2; exit 1; }
-  near tokens "$OWNER" send-near "$id" "$RELAYER_NEAR" network-config mainnet sign-with-access-key-file "$OWNER_KEY" send
+  send_near "$id" "$RELAYER_NEAR"
   # The key the host gets can call one method on one contract, and spends at most the allowance.
   near account add-key "$id" grant-function-call-access --allowance "$RELAYER_ALLOWANCE" \
     --contract-account-id intents.near --function-names execute_intents \

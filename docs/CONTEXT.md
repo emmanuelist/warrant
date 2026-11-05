@@ -162,6 +162,8 @@ Verified facts about everything this project depends on. Each entry says how it 
 
 - **A component-layer `display: none` loses to a display utility on the same element** (again, 2026-10-21): the phone's backing list kept Tailwind's `flex`. Toggle display with responsive utilities (`hidden lg:flex`) on elements that carry one.
 
+**`near tokens send-near` can't run in a script when the receiver doesn't exist yet (2026-11-05).** It warns, asks for confirmation, and fails with "The input device is not a TTY". `near transaction construct-transaction <signer> <receiver> add-action transfer '<n> NEAR' skip network-config mainnet sign-with-access-key-file <file> send` works, and `display` in place of `send` signs without sending. A transfer that creates an implicit account burned 0.0071 NEAR, measured on mainnet.
+
 **An account holding more than 10 KB of state can't be deleted (2026-11-05).** The code doesn't count toward that. In the sandbox, `retire` with 12,143 bytes of state fails at the deletion unless the contract clears its state first, and passes when it does (E-029). A series costs about 400 bytes.
 
 **A view call can't reach a contract's refusal (2026-11-05).** `query call_function` does run a change method, but it can't attach a deposit, so `wrap.near.near_withdraw` and `intents.near.mt_transfer` both stop at "Requires attached deposit of exactly 1 yoctoNEAR". There is no `eth_call` equivalent for our 1-yocto methods, so the refusal room sends real transactions.
