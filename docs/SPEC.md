@@ -32,7 +32,7 @@ Derived per kind:
 **Series state:** `long_supply`, `collateral_held`, `proceeds_held`, `exercised`, `reclaimed: bool`.
 
 ## Actions through Intents
-The caller runs `intents.near.mt_transfer_call(receiver_id = <this contract>, token_id, amount, approval: null, memo, msg)` with 1 yoctoNEAR and **≥ 200 Tgas**. Intents moves the tokens to this contract inside its ledger, then calls our `mt_on_transfer`. If we panic, Intents refunds everything. If we return refunds, Intents returns those amounts.
+The caller runs `intents.near.mt_transfer_call(receiver_id = <this contract>, token_id, amount, approval: null, memo, msg)` with 1 yoctoNEAR and at least 60 Tgas (the whole refusal room passes at 60; the app asks for 90, D-041). Intents moves the tokens to this contract inside its ledger, then calls our `mt_on_transfer`. If we panic, Intents refunds everything. If we return refunds, Intents returns those amounts.
 
 `msg` is JSON with an `action` tag:
 
