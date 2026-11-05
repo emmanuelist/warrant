@@ -40,6 +40,7 @@ Append-only proof log. Every claim in the README, demo or submission points to a
 | E-035 | 2026-11-05 | The contract's account has no keys. Its last access key is deleted, `view_access_key_list` returns none on three nodes, `near account list-keys` prints an empty table, and `verify.mjs` says so. The `code_hash` is unchanged. The smallest series is now about $20 of collateral (D-045), two small series have offers on the board, and `retire` would leave about 1.7 KB of state, under the chain's limit for deleting an account | [The deletion](https://nearblocks.io/txns/A1mX5E2cJSUkjWMhiQoZ1bn5fJCekprQBHJgBb11qi5j); output below | (this branch) |
 | E-036 | 2026-11-05 | The owner account's old key opens nothing. It's gone from the account on three nodes, `intents.near` no longer trusts it, the new key signs on both, and the balances inside Intents didn't move | [Add](https://nearblocks.io/txns/Zd4H9tDZxCgJqh1NCtt6fhcNbApWy6Pq2eTgAYm653P) · [swap on Intents](https://nearblocks.io/txns/CtxtrLNm12XpbB57QzTV5uxFrTCtyrmfvhf9HM4Mcz86) · [delete](https://nearblocks.io/txns/23EeeWrUy1ARERGZv1Tx4z3TUFHgjh4hJ6gm3nMB3Rqj); output below | (this branch) |
 | E-037 | 2026-11-05 | The repo is public and a stranger's path works. Nothing that opening exposes holds a secret: every ref, old commit, issue and PR with its edit history, and all 38 CI logs were scanned first. A clone with no credentials passes `verify.mjs` and rebuilds the tag to the deployed hash. SourceScan rebuilt it on its own, and NearBlocks says "Contract Source Code Verified" and "Contract Locked: Yes". The film's closing card now shows commands that run | [NearBlocks](https://nearblocks.io/address/warrant-options.near/contract/code); output below | (this branch) |
+| E-038 | 2026-11-05 | The demo post is public. It says it was built at NEAR HACKATHON, tags `@NEARProtocol` and `#NEARHackathon`, links the app and the repo, and carries the film. The copy X serves ends on the corrected closing card | [The post](https://x.com/emmanuelcesc/status/2118396029271974299); output below | (this branch) |
 
 ## E-001 output
 ~~~text
@@ -1189,4 +1190,27 @@ The film's closing card said `git clone github.com/emmanuelist/warrant && node s
 It now has Code and Check it on two lines. Picture re-rendered, the mix not rebuilt:
   139.5 s, 1920x1080, H.264 High, 30 fps, 48,166,803 bytes; -16.0 LUFS, LRA 4.0, peak -2.3 dBFS; 0 black frames
   SSIM against the previous master, 279 samples at 2 per second: lowest before 128 s 0.9995; below 0.985 only from 130.5 s on, the closing card
+~~~
+
+## E-038 output
+
+~~~text
+Read back with no login from X's public embed endpoint (cdn.syndication.twimg.com/tweet-result):
+created 2026-11-05T17:32:25Z, 1 reply
+
+What if an options seller can't pay?
+
+Options that can't default and need no oracle: the collateral is locked inside NEAR Intents until expiry.
+
+Built at NEAR HACKATHON @NEARProtocol #NEARHackathon
+
+Break it on mainnet: https://t.co/UssbdOn9DX
+Code: https://t.co/uc37ZqX1kd https://t.co/gF7uUNpMXp
+
+mentions: NEARProtocol
+hashtags: NEARHackathon
+links:    https://warrant-options.vercel.app, https://github.com/emmanuelist/warrant
+media:    video, 139,500 ms
+
+X's 720p copy at 2:16 shows the closing card with four rows: Try it, Code, Check it, Contract (E-037).
 ~~~
