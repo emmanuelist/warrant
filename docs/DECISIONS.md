@@ -630,3 +630,19 @@ The P2s: the levers and the board contradicted the sheets; lamp colours broke "b
 
 **Consequences:** The board has offers only when someone lists, which the README's Limits say. The contract is open, so anyone can run such an agent against it.
 
+## D-044 · How the film is shot · 2026-11-05 · accepted · refines D-037
+**Context:** D-037 asked for device scale 2, a real wallet prompt, and shots of NearBlocks and BaseScan. Rehearsals on mainnet tested each one.
+
+**Decision:**
+- **Device scale 1.5, not 2.** With a sheet's blurred backdrop open, the browser's screencast holds 8 fps at 2x and 38 fps at 1.5x, and GPU flags don't help. With the off-camera browser on a blank page, the take runs at 80 to 98 fps. 1.5x is 2280×1284, so a push-in of up to 1.55x stays at native sharpness inside a 1080p frame.
+- **One continuous take.** A single script runs the whole story on one short-dated series, so the chain's clock is what opens the lock on camera. A take that misses a moment fails, and the edit only cuts out waiting.
+- **The real wallet prompt is Intear's** (D-040), on the NEAR side. The EVM wallet is a local key named "Demo signer (local key)" on camera. Loading a real extension was tried and the environment refused to run downloaded code, so a real extension's prompt stays unproven, as the README says.
+- **Explorers that allow an automated browser.** NearBlocks, BaseScan, Routescan, Blockchair and Blocksec all block one, and that isn't worth evading. The film shows Pikespeak for the refusal and NEAR Intents' own explorer for the payout, which shows the whole route. Blockscout's token transfers tab sat on "Data sync in progress" even for a four-hour-old transaction, and its details tab carries an ad. The README keeps NearBlocks and BaseScan links, since people can open those.
+- **Under 2:20,** the most a standard X account can attach.
+
+**Alternatives:**
+- Lower capture quality at 2x: a higher resolution at 8 fps looks worse than 1.5x at full speed.
+- Turning off the sheet's blur while filming: it would make the footage differ from the product.
+
+**Consequences:** The pipeline lives in `internal/film`, private, as in the earlier entries. The keys chapter can be re-rendered on its own, so it can show the account after the lock.
+

@@ -53,6 +53,7 @@ Derived from the thesis, not picked. A bank vault's **time lock** is a clockwork
    - Every live series is a blued-steel marker placed by its time to release; markers that open together step inward so none hides another. A blued arc runs from the index to the next lock to open. Markers are buttons (44px to hit): each opens its series on the board.
    - Markers carry no labels on the ring. The centre is the readout: the next lock to open, or the one you point at or focus ("#2 · 16.80 tUSDC · 23 Oct 16:55" under its clock), so nothing covers the printed scale or the total (D-028).
    - The centre holds the collateral the locks hold (rolling figures) and the clock to the next release. A seconds hand sweeps the ring.
+   - When a lock runs out while the page is open, it opens on the dial: gold rings leave the blued centre, the total rolls down, and "Lock #N open · amount" holds in gold for a few seconds before the next lock's clock returns. Gold is release, as everywhere. With reduced motion, the line shows without the rings.
    - It tilts toward the pointer and the bezel's highlight follows it round; it sets itself on load (see Motion).
    - It recurs in **"How the lock holds"**, where scroll runs one lock's clock from written to open, beside the contract's own lines (see Motion), and in the **Write sheet**, where a small dial shows where the new lock lands among the live ones as you pick its expiry.
 

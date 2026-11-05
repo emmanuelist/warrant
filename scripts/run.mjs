@@ -14,6 +14,7 @@
  *   node scripts/run.mjs seed-base <0x> <usdc> <gas>  mainnet: writer pays a 0x wallet on Base through 1Click: USDC, and <gas> USDC's worth of ETH
  *   node scripts/run.mjs [--devnet] write             writer: the long-dated series and its offer
  *   node scripts/run.mjs [--devnet] list <series> <n> <usdc>  writer: offer n of their longs at a price per option
+ *   node scripts/run.mjs [--devnet] claim <series>    writer: collect the strike paid on a series
  *   node scripts/run.mjs [--devnet] room              every attempt in web/src/lib/room.json, sent for
  *                                                     real; writes VITE_REFUSAL_TXS to the web env file
  */
@@ -244,7 +245,7 @@ const steps = {
     if (!/^0x[0-9a-f]{40}$/.test(amountArg ?? "") || usdc === undefined || gas === undefined) throw new Error("seed-base <0x> <usdc> <gas>");
     const toBase = { origin: net.usdc, recipient: amountArg, recipientType: "DESTINATION_CHAIN" };
     await settleIntent(await oneClickIntent(usdc, { ...toBase, destination: BASE_USDC }), "USDC", "USDC on Base");
-    await settleIntent(await oneClickIntent(gas, { ...toBase, destination: BASE_ETH }), "USDC", "ETH on Base");
+    if (gas > 0n) await settleIntent(await oneClickIntent(gas, { ...toBase, destination: BASE_ETH }), "USDC", "ETH on Base");
     console.log(`writer USDC inside Intents: ${await balanceIn(net.writer, net.usdc)}`);
   },
 
@@ -274,6 +275,13 @@ const steps = {
       memo: null,
     });
     console.log(`holder USDC inside Intents: ${await balanceIn(net.holder, net.usdc)}`);
+  },
+
+  /** The strike paid on a series, from the contract to the writer's Intents balance. */
+  async claim() {
+    if (!amountArg) throw new Error("claim <series>");
+    await ok(`claim series ${amountArg}`, net.writer, net.options, "withdraw_proceeds", { series_id: amountArg });
+    console.log(`writer USDC inside Intents: ${await balanceIn(net.writer, net.usdc)}`);
   },
 
   async list() {

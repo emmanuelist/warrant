@@ -4,16 +4,17 @@ _Last verified: 2026-11-05 (rows dated 2026-11-05; the rest carry their date) ·
 **Name:** Warrant (D-014). **Thesis:** Options that can't default and need no oracle: the collateral is locked inside NEAR Intents until expiry.
 **Milestone:** M3, due 2026-11-12 23:59 UTC. M1 and M2 met on 2026-11-05 · **Deadline:** 2026-11-14 23:59 UTC · 9 days left on 2026-11-05
 **Live:** https://warrant-options.vercel.app · contract `warrant-options.near` (E-031)
-**Next action:** the film (#22, D-037): port the pipeline from the earlier entries, then shoot on mainnet. Re-scan rivals on 2026-11-07 (#12). After the film, list a few offers so the board isn't empty (D-043).
+**Next action:** the user watches the draft film (`internal/film/film/warrant-master.mp4`) and decides on the lock (#18). The film's keys chapter says the account has no keys, so that cut can't be published until the lock is done or the line changes. After that: re-render the keys chapter, list offers so the board isn't empty (D-043), re-scan rivals on 2026-11-07 (#12), open the repo (D-039), then the X post and the payload (#14).
 
 Claude provides the wallet and records the video. The user only funds, posts on X and confirms the payload (D-036). The demo winds down from 2026-11-26 (#25). What the proof has to beat: D-037 (#18, #22).
-**Blocked on (the user's):** nothing right now. The funding (#24) arrived.
+**Blocked on (the user's):** the lock decision (#18) and a look at the draft film. Drafts of the X post and the payload are in `internal/submission/`.
 
 Vercel hosts the page and relayer. Deploy with `vercel build --prod --yes` and `vercel deploy --prebuilt --prod --yes` in `web/`; `vercel link` leaves a `web/.env.local` and `web/.gitignore` to delete. Narration uses an ElevenLabs key read at run time and never copied here (the user agreed to both, 2026-11-05).
 
 ## Works (verified this session)
 | Capability | Verified by | Evidence |
 |---|---|---|
+| **The film's take (2026-11-05):** the whole story in one continuous run on mainnet, on one series, with the chain's clock opening the lock on camera; a draft master at 2:19.5 under X's 2:20 limit. It isn't final: its keys line needs the lock | `internal/film/scripts/shoot.mjs`, `render.ts`, `score.ts`, ffmpeg QA | E-034, D-044 |
 | **Anyone can check it (2026-11-05):** `node scripts/verify.mjs` reads the claims off mainnet and Base with no key; a clean clone of `mainnet-v0.1.0` rebuilds to the deployed `code_hash`; a position moved between accounts as an Intents asset | `scripts/verify.mjs`, `cargo near build reproducible-wasm`, the hosted page | E-033 |
 | **The round trip on mainnet (2026-11-05):** a wallet with no NEAR account paid in from Base, bought, exercised, wrote a put and was paid on Base, through the hosted page and relayer, every leg on its own explorer. Signed by a local signer in the browser, not an extension | Hosted page in a scripted browser, Base and NEAR receipts | E-032 |
 | **Live on mainnet (2026-11-05):** the contract with a series and its collateral inside Intents; 31 of 31 refusal-room attempts as `room.json` says, read back by the hosted page; a real 1Click swap; a purchase on the hosted page signed in a real wallet (Intear through near-connect) | `scripts/run.mjs`, RPC read-back, the page itself | E-031 |
@@ -43,16 +44,16 @@ Vercel hosts the page and relayer. Deploy with `vercel build --prod --yes` and `
 |---|---|---|---|
 | Options contract, `code_hash DADQfyxqwetsaZBh5n7JEQ8MnwZKQiqzCxaS465svgYz`, tag `mainnet-v0.1.0`, one full-access key until #18 | mainnet | `warrant-options.near` | 2026-11-05 |
 | Page and relayer | Vercel | https://warrant-options.vercel.app, `/api/relay` | 2026-11-05 |
-| Owner and writer | mainnet | `d0482bff…4148`: about 0.23 NEAR; inside Intents 0.25 wNEAR, about 0.12 USDC, and 0.9 USDC of proceeds to claim; no longs left | 2026-11-05 |
-| Demo holder (Intear wallet, D-040) | mainnet | `e96016e5…da50`: about 0.13 NEAR; inside Intents 0.10 wNEAR, 0.01 USDC | 2026-11-05 |
-| Demo EVM wallet, key in `~/.near-credentials/warrant-evm/` | Base + Intents | `0x05db…7b0b`: 0.30 USDC and gas on Base; inside Intents about 0.03 USDC; wrote series 3 and holds the last long of series 1 | 2026-11-05 |
-| Relayer, function-call key on `intents.near` / `execute_intents` | mainnet | `f6464d4e…90ec`: about 0.19 NEAR, allowance about 0.145 (D-042) | 2026-11-05 |
+| Owner and writer | mainnet | `d0482bff…4148`: about 0.23 NEAR; inside Intents 0.15 wNEAR, 0.67 USDC | 2026-11-05 |
+| Demo holder (Intear wallet, D-040), the film's writer | mainnet | `e96016e5…da50`: about 0.12 NEAR; inside Intents 0.05 wNEAR, 0.07 USDC, and 0.45 USDC of proceeds to claim | 2026-11-05 |
+| Demo EVM wallet, key in `~/.near-credentials/warrant-evm/` | Base + Intents | `0x05db…7b0b`: 0.43 USDC and gas on Base; inside Intents 0.32 USDC; wrote series 3 and holds the last long of series 1 | 2026-11-05 |
+| Relayer, function-call key on `intents.near` / `execute_intents` | mainnet | `f6464d4e…90ec`: about 0.18 NEAR, allowance about 0.13 (D-042) | 2026-11-05 |
 
 ## Broken or unverified
 - A real EVM extension's prompt (MetaMask shows the ERC-191 JSON as text): unexercised, and hard to drive headless. The round trip was signed by a local signer in the browser. Solana and passkey signers are not built (D-030).
 - Other near-connect wallets: only Intear is exercised (D-040).
 - The `retry_payout` UI path: needs a failed payout to appear; the contract path is unit-tested (E-004).
-- The exercise net as the primary move's sentence: the sheet's version is verified on mainnet (E-032), this one needs a long in the money.
+- The exercise net as the primary move's sentence: the sheet's "nets +" and "loses" are both verified on mainnet (E-032, E-034), this one needs a viewer whose primary move is exercising.
 - `scripts/mainnet-deploy.sh lock`: its near CLI chain is checked with `--help` but never sent (#18).
 - `retire` on mainnet: can't run before 2026-11-26.
 - What a full storage balance blocks beyond new writes (D-035).
