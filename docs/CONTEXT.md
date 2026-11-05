@@ -15,8 +15,8 @@ Verified facts about everything this project depends on. Each entry says how it 
 ## Accounts
 | Role | Account | Status | Verified |
 |---|---|---|---|
-| Dev and owner account (D-004, D-035) | `d0482bffd77daa246ff50cd36cd8c8392548a0cf0fc7d6ccd887a3675f084148` (implicit). Public key `ed25519:F23dZLwKtwWF4hBWHarhLTvWHjSTcSLweArLua7BQTLT`. Key file `~/.near-credentials/implicit/<id>.json` | Not on-chain until funded (`UNKNOWN_ACCOUNT`) | 2026-11-05 |
-| Contract account (D-035) | `warrant-options.near`. `warrant.near` exists and isn't ours | Not created (`UNKNOWN_ACCOUNT`) | 2026-11-05 |
+| Dev and owner account (D-004, D-035) | `d0482bffd77daa246ff50cd36cd8c8392548a0cf0fc7d6ccd887a3675f084148` (implicit). Public key `ed25519:4eTtHJ6KcPKGC5EyqkGz2EU3WThh5VSMmLwZ2P1TJW2j` since 2026-11-05 (D-046). Key file `~/.near-credentials/implicit/<id>.json` | Owns the contract and wrote series 1, 10 and 11 | 2026-11-05 |
+| Contract account (D-035) | `warrant-options.near`. `warrant.near` exists and isn't ours | Deployed, with no access keys (E-035) | 2026-11-05 |
 
 ## Contracts we call (mainnet)
 | Name | Account | Source of address | Interface we use | Verified how |
@@ -26,6 +26,7 @@ Verified facts about everything this project depends on. Each entry says how it 
 | wNEAR | `wrap.near` | 1Click `/v0/tokens` | NEP-141, **24 decimals**. `near_deposit` (attach NEAR), `near_withdraw(amount)` (1 yocto). Storage bounds 0.00125 NEAR. Intents exposes no view naming its wNEAR contract (`wnear_id` → MethodNotFound), so the web app takes it from `VITE_WRAP_CONTRACT` (default `wrap.near`) | Same; flows run on the devnet (E-007) |
 | BTC inside Intents | `btc.omft.near` | Intents token list | NEP-141 (bridged) | `view_account`, 2026-10-20 |
 | USDC on Base / Arbitrum (Intents IDs) | `nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near` / `nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near` | 1Click `/v0/tokens` | Withdrawal to the destination chain via a 1Click quote | Dry quotes, 2026-10-20 |
+| SourceScan verifier | `v2-verifier.sourcescan.near` | NearBlocks' contract tab, https://github.com/SourceScan/verifier-contract | View `get_contract(account_id)`, read by `verify.mjs` (Traps) | `get_contract` and `get_contracts_count`, 2026-11-05 |
 | Chain Signatures MPC | `v1.signer` (mainnet), `v1.signer-prod.testnet` | Ecosystem docs | Not on the core path | `view_account`, 2026-10-20 |
 | Pyth | `pyth-oracle.near` | — | **Do not use** (Traps, E-001) | 2026-10-20 |
 | Rhea price oracle | `priceoracle.near` | — | Not used; `get_price_data` returns null outside `oracle_call` | 2026-10-20 |
@@ -177,13 +178,17 @@ Verified facts about everything this project depends on. Each entry says how it 
 
 **A view call can't reach a contract's refusal (2026-11-05).** `query call_function` does run a change method, but it can't attach a deposit, so `wrap.near.near_withdraw` and `intents.near.mt_transfer` both stop at "Requires attached deposit of exactly 1 yoctoNEAR". There is no `eth_call` equivalent for our 1-yocto methods, so the refusal room sends real transactions.
 
+**A force-push doesn't take a commit off GitHub (2026-11-05).** The old tip stays readable by hash, and once a repo is public its Activity page (`/activity`, 200 with no login) lists force-pushes. `gh api repos/<owner>/<repo>/activity` gives every push's before and after hash, and `git fetch origin <sha>` gets the commit. GitHub's docs say Support "won't remove non-sensitive data", and that on going public "Actions history and logs will be visible to everyone". Before opening a repo, scan those too: old tips, `refs/pull/*`, issue and PR edit history (`userContentEdits` in GraphQL), CI logs (E-037, D-047).
+
+**SourceScan verifies by rebuilding (2026-11-05).** `POST https://api.sourcescan.dev/api/verify/rust` with `{"networkId":"mainnet","accountId":"<contract>"}` asks for no signature and no deposit, and a contract with no keys goes through. It reads the NEP-330 metadata, clones the public repo at the commit named there and rebuilds. Its backend then writes the result to `v2-verifier.sourcescan.near` and pins the repo to IPFS, so the call isn't a dry run. NearBlocks shows the record at `/address/<contract>/contract/code`, and "Contract Locked" on `/address/<contract>/contract`; `?tab=contract` opens neither (E-037).
+
 **Devnet signer (D-017)**
 - Every devnet account shares the sandbox genesis key (`near_sandbox::config::DEFAULT_GENESIS_ACCOUNT_PRIVATE_KEY`, public key `ed25519:5BGSaf6YjVm7565VzWQHNxoyEjwr3jUpRJSGjREvU9dB`). `tests/devnet.rs` writes it to `web/.env.development.local`.
 - WebCrypto imports an Ed25519 secret only as PKCS#8: the 16-byte RFC 8410 header `302e020100300506032b657004220420` + the 32-byte seed (the first half of NEAR's 64-byte secret).
 - A transaction is borsh `Transaction` V0 (signer, `0u8` + 32-byte key, nonce u64, receiver, block hash, actions; `FunctionCall` = variant `2`: method, args bytes, gas u64, deposit u128). Sign `sha256(bytes)`; `SignedTransaction` = bytes + `0u8` + 64-byte signature; RPC `send_tx {signed_tx_base64, wait_until: "FINAL"}`. Nonce and block hash come from `view_access_key`.
 - Production builds never load `.env.development.*`; E-007 checks the key is absent from `dist`.
 
-## Hosting (Vercel is the recommendation, the user's call at #10; nothing deployed; docs read and local build run 2026-11-05)
+## Hosting (Vercel, live since 2026-11-05: E-031)
 - **Function:** `web/api/relay.ts` exports the documented Web handler, `export default { fetch(request) }`. It needs no flag, and the runtime defaults to Node.js (https://vercel.com/docs/functions/functions-api-reference). On Hobby, 300 s is both the default and the maximum duration.
 - **Routing:** `web/vercel.json` sets the Vite preset and rewrites everything but `/api/` to `/index.html`. The filesystem wins before rewrites, so `/account/index.html` is served as built. A plain `api/` folder works under the Vite preset: `vercel build` emits `functions/api/relay.func` (the docs don't say so; checked on the output).
 - **Trap: `.ts` imports survive the host's transpile.** Vercel compiles `api/` and everything it imports file by file with this project's TypeScript and keeps the import paths, so the function would crash on `../relay/relay.ts` at its first request while the page looks fine. `rewriteRelativeImportExtensions` in `web/tsconfig.json` makes the emitted `.js` import `.js`. The `.ts` paths stay in the source, because Vite's native config loader and `node scripts/*.mjs` need them.
@@ -206,5 +211,5 @@ Verified facts about everything this project depends on. Each entry says how it 
 | `VITE_REPO_URL` | Public repository, linked from the footer when set | GitHub, at #6/#13 |
 | `VITE_DEVNET_ACCOUNTS` | Devnet only: the seeded accounts to act as, holders included (`alice.sandbox,bob.sandbox,carol.sandbox`), offered by the header and by sheets with no one to send them (D-028) | Written by `tests/devnet.rs` |
 | `RELAY_ACCOUNT_ID` / `RELAY_SECRET_KEY` | **Server-side only, no `VITE_` prefix (never bundled).** The relayer's gas-paying account and its ed25519 key (`web/relay/relay.ts`, D-030). Mainnet: a function-call key limited to `intents.near` / `execute_intents` with a capped allowance, set in the host's secrets (rule 6). The dev server mounts `/api/relay` only when both are set | Devnet: written by `tests/devnet.rs` (`relayer.sandbox`, the genesis key) |
-| `VITE_RELAY_URL` | Where the web app posts intents signed by EVM wallets (D-030). Default `/api/relay`: the dev server mounts it; on mainnet, the host that serves the relayer (the user's call at #10) | Default suffices when the relayer shares the site's origin |
+| `VITE_RELAY_URL` | Where the web app posts intents signed by EVM wallets (D-030). Default `/api/relay`: the dev server mounts it; on mainnet, the Vercel function beside the page | Default suffices when the relayer shares the site's origin |
 | `BASE_PAYOUT_ADDRESS` | Demo payout address on Base | Generated at M2 |

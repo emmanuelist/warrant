@@ -681,3 +681,14 @@ The P2s: the levers and the board contradicted the sheets; lamp colours broke "b
 
 **Consequences:** The old key opens nothing (E-036). Scripts read the same file at the same path, and sign with whatever key it holds. An exposed key on an implicit account is a two-step fix from now on (docs/CONTEXT.md).
 
+## D-047 · The repo opens with its old rewritten commits still readable · 2026-11-05 · accepted · refines D-039
+**Context:** The scan D-039 asked for covered everything GitHub would serve, and found no secret (E-037). It did find a limit of D-039's rewrite: a force-push doesn't take a commit off GitHub. The six old tips that rewrite left behind are still served by hash, and the repo's Activity page, open to anyone now, lists the force-pushes. They hold an earlier wording of the personal notes D-039 moved out. So D-039's "no longer resolve" is wrong: `1ffcc9f` in E-026 and the branch hashes in E-025 do resolve on GitHub, as commits outside any branch.
+
+**Decision:** Open this repo as it is. The user chose that on 2026-11-05 after reading what those commits say.
+
+**Alternatives:**
+- A new repo under the same name, with only `main` and the tag: it leaves those commits behind, and the contract's source link on chain would still work. It loses the 12 PR pages and the CI history, issues would have to be moved or recreated, and links in older entries would break.
+- GitHub Support: its docs say it "won't remove non-sensitive data".
+
+**Consequences:** A note kept out of a repo has to stay out from the first push, because a rewrite can't take it back (docs/CONTEXT.md). Those commits hold no key, token or address.
+

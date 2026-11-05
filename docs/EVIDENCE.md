@@ -39,6 +39,7 @@ Append-only proof log. Every claim in the README, demo or submission points to a
 | E-034 | 2026-11-05 | The film's story ran as one continuous take on mainnet, on series 9: a real wallet wrote a call, the same wallet was refused its collateral back, a `0x` wallet paid in from Base, bought, exercised and was paid on Base, the chain's clock opened the lock on camera, and the same press paid out. Every moment is measured from the take, and a take that misses one fails | [Refused](https://nearblocks.io/txns/5CZPK5VjqZBp1CBcNTKpmMGUpJMLyQkmPLKAB1c4DLhJ) · [reclaim after expiry](https://nearblocks.io/txns/7H3qFaWrfgT5X4UiJAssdivXvJp5ZKojbRsn6m3jUhRb) · [paid on Base](https://basescan.org/tx/0x8da626d385c7ded1e1a2563b91d3f560263aa60b5768c9691a5243516ea42508) · [the route](https://explorer.near-intents.org/transactions/07be69cf0ef766b95cdec24f206656ef6deb6d1107a3a63cc1650a59b1f002a5); output below | (this branch) |
 | E-035 | 2026-11-05 | The contract's account has no keys. Its last access key is deleted, `view_access_key_list` returns none on three nodes, `near account list-keys` prints an empty table, and `verify.mjs` says so. The `code_hash` is unchanged. The smallest series is now about $20 of collateral (D-045), two small series have offers on the board, and `retire` would leave about 1.7 KB of state, under the chain's limit for deleting an account | [The deletion](https://nearblocks.io/txns/A1mX5E2cJSUkjWMhiQoZ1bn5fJCekprQBHJgBb11qi5j); output below | (this branch) |
 | E-036 | 2026-11-05 | The owner account's old key opens nothing. It's gone from the account on three nodes, `intents.near` no longer trusts it, the new key signs on both, and the balances inside Intents didn't move | [Add](https://nearblocks.io/txns/Zd4H9tDZxCgJqh1NCtt6fhcNbApWy6Pq2eTgAYm653P) · [swap on Intents](https://nearblocks.io/txns/CtxtrLNm12XpbB57QzTV5uxFrTCtyrmfvhf9HM4Mcz86) · [delete](https://nearblocks.io/txns/23EeeWrUy1ARERGZv1Tx4z3TUFHgjh4hJ6gm3nMB3Rqj); output below | (this branch) |
+| E-037 | 2026-11-05 | The repo is public and a stranger's path works. Nothing that opening exposes holds a secret: every ref, old commit, issue and PR with its edit history, and all 38 CI logs were scanned first. A clone with no credentials passes `verify.mjs` and rebuilds the tag to the deployed hash. SourceScan rebuilt it on its own, and NearBlocks says "Contract Source Code Verified" and "Contract Locked: Yes". The film's closing card now shows commands that run | [NearBlocks](https://nearblocks.io/address/warrant-options.near/contract/code); output below | (this branch) |
 
 ## E-001 output
 ~~~text
@@ -1118,4 +1119,74 @@ payload: {"standard":"nep413","recipient":"intents.near","public_key":"ed25519:4
 simulate_intents refused: ... "insufficient balance or overflow"
 That quote is for 0.1 wNEAR and the account holds 0.05. The engine checks the key before it runs an intent
 (core/src/engine/mod.rs, execute_signed_intent), so reaching the balance means the new key was accepted.
+~~~
+
+## E-037 output
+
+The scan and comparison scripts were one-offs and aren't kept. They printed where a rule matched, never the matched text, and read the local credential files only to search for them literally.
+
+~~~text
+What opening exposes, all read before the flip:
+  a fresh mirror of all 26 refs, refs/pull/* included
+  the 6 old tips no ref holds, named by GitHub's activity list and fetched by hash (D-047)
+  this machine's object database, unreachable objects included
+  23 issues and 12 PRs: bodies, comments, reviews, title renames, edit history (GraphQL userContentEdits)
+  milestones, labels, commit comments, CI run titles, and the logs of all 38 CI runs
+
+objects: 309 blobs, 67 commits, 1 tag, 16.7 MB; 152 distinct file names
+env or key files in any commit: .env.example, web/.env.example, web/.env.production (names and public values only)
+every secret in the local credential files and the narration key, searched literally: 0 hits
+private key, PEM, GitHub token and API key shapes: 0 hits
+base58 runs of 80 or more characters: 0 hits
+key = value matches: 2, both web/.env.production, a refusal's name ending in "token" beside a public account id
+0x + 64 hex: 7 distinct values, each a transaction on Base (eth_getTransactionByHash)
+runs of 12 or more lowercase words: 291; highest share of BIP-39 words in any run: 58%
+PNG metadata: 0 of 37 images carry a text chunk
+Actions: no secrets or variables on the repo, no `secrets.` in any workflow, 0 artifacts, 0 hits in the logs
+
+refs compared with the mirror just before the flip: unchanged (26)
+$ gh repo edit emmanuelist/warrant --enable-wiki=false --enable-projects=false
+$ gh repo edit emmanuelist/warrant --visibility public --accept-visibility-change-consequences
+{"hasIssuesEnabled":true,"hasProjectsEnabled":false,"hasWikiEnabled":false,"isPrivate":false,"visibility":"PUBLIC"}
+opened at 2026-11-05 16:45 UTC
+
+A stranger's path, with no credentials (env -i, an empty HOME):
+200  github.com/emmanuelist/warrant
+200  .../tree/f14416969258a8f1aa6073adddb57d961f126b57    the source link on chain
+200  .../tree/mainnet-v0.1.0
+200  .../actions/workflows/ci.yml and .../badge.svg
+200  .../blob/main/docs/EVIDENCE.md
+200  .../activity
+200  raw.githubusercontent.com/emmanuelist/warrant/main/web/public/og.png
+
+$ git clone https://github.com/emmanuelist/warrant && cd warrant
+$ node scripts/verify.mjs
+17 PASS lines, then: Every claim above holds on chain.
+f14416969258a8f1aa6073adddb57d961f126b57 is the tag's commit and is on main's history
+
+$ git checkout mainnet-v0.1.0 && cd contracts/options && cargo near build reproducible-wasm    (4 min 13 s)
+    - SHA-256 checksum bs58: DADQfyxqwetsaZBh5n7JEQ8MnwZKQiqzCxaS465svgYz
+326,736 bytes
+
+The hosted page in a fresh browser tab, 12 s after load: 0 console errors, 0 warnings
+
+SourceScan, once the repo is public, with no key and no deposit:
+$ curl -X POST https://api.sourcescan.dev/api/verify/rust -H 'content-type: application/json' \
+    -d '{"networkId":"mainnet","accountId":"warrant-options.near"}'
+{"message":"Contract verified successfully","checksum":"DADQfyxqwetsaZBh5n7JEQ8MnwZKQiqzCxaS465svgYz"}    http 200, 69 s
+
+get_contract(warrant-options.near) on v2-verifier.sourcescan.near:
+{"cid":"QmWbyb12eNzm7mb4sfBCPwmQBACeLwJtUzJepYdSeubLso","lang":"rust","code_hash":"DADQfyxqwetsaZBh5n7JEQ8MnwZKQiqzCxaS465svgYz","block_height":223194034,"votes":[],"comments":[]}
+
+NearBlocks in a browser, /address/warrant-options.near/contract:
+  Overview       Contract Hash DADQfyxqwetsaZBh5n7JEQ8MnwZKQiqzCxaS465svgYz · Contract Locked: Yes
+  Contract Code  Contract Source Code Verified · Standard nep330:v1.3.0 · Source snapshot f14416969258a8f1… · IPFS QmWbyb12eNzm… · the source files
+
+$ node scripts/verify.mjs    (with the line this entry adds)
+PASS  rebuilt by a third party   v2-verifier.sourcescan.near records DADQfyxqwetsaZBh5n7JEQ8MnwZKQiqzCxaS465svgYz
+
+The film's closing card said `git clone github.com/emmanuelist/warrant && node scripts/verify.mjs`, which fails as typed.
+It now has Code and Check it on two lines. Picture re-rendered, the mix not rebuilt:
+  139.5 s, 1920x1080, H.264 High, 30 fps, 48,166,803 bytes; -16.0 LUFS, LRA 4.0, peak -2.3 dBFS; 0 black frames
+  SSIM against the previous master, 279 samples at 2 per second: lowest before 128 s 0.9995; below 0.985 only from 130.5 s on, the closing card
 ~~~

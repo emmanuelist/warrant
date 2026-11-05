@@ -66,7 +66,7 @@ Local UI against real chain state: `cargo test --test devnet -- --ignored --noca
 ## Where things live
 | Concern | File |
 |---|---|
-| Milestones and exit criteria | docs/PLAN.md (GitHub milestones mirror it once the remote exists) |
+| Milestones and exit criteria | docs/PLAN.md (GitHub milestones mirror it) |
 | Work items | GitHub issues (`gh issue list --repo emmanuelist/warrant --milestone "<current>"`) |
 | Why we chose what we chose | docs/DECISIONS.md (append-only) |
 | Proof that things work | docs/EVIDENCE.md (append-only) |
