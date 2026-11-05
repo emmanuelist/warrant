@@ -33,7 +33,6 @@ const YOCTO = 1n;
 const NEAR_ONE = 10n ** 24n;
 const USDC_ONE = 10n ** 6n;
 const SECOND_NS = 10n ** 9n;
-const DAY_NS = 86_400n * SECOND_NS;
 
 const net = devnet ? devnetProfile() : mainnetProfile();
 
@@ -150,6 +149,8 @@ const createMsg = (underlyingPerOption, strikePerOption, expiryNs) => ({
 const PER_OPTION = NEAR_ONE / 10n;
 const STRIKE = (USDC_ONE * 45n) / 100n;
 const PREMIUM = (USDC_ONE * 2n) / 100n;
+// The day after the hosted demo's last day (Q-012): everything locked comes back then (#25).
+const DEMO_EXPIRY_NS = BigInt(Date.UTC(2026, 10, 26)) * 1_000_000n;
 
 const steps = {
   async status() {
@@ -267,9 +268,7 @@ const steps = {
   },
 
   async write() {
-    const now = await chainNowNs();
-    // Outlives the hosted demo's last day (2026-11-25, Q-012) when written in November.
-    await ok("write 3 calls", ...viaIntents(net.writer, wnear, 3n * PER_OPTION, createMsg(PER_OPTION, STRIKE, now + 30n * DAY_NS)));
+    await ok("write 3 calls", ...viaIntents(net.writer, wnear, 3n * PER_OPTION, createMsg(PER_OPTION, STRIKE, DEMO_EXPIRY_NS)));
     const series = await latestSeries(net.writer);
     await ok(`offer 2 of series ${series.series_id}`, net.writer, net.options, "list", { series_id: series.series_id, amount: "2", price_per_option: PREMIUM.toString() });
     console.log(`series ${series.series_id}: ${series.long_supply} longs, ${series.collateral_held} locked, token ${series.token_id}`);
