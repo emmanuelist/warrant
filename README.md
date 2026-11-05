@@ -44,7 +44,7 @@ git clone https://github.com/emmanuelist/warrant && cd warrant
 node scripts/verify.mjs
 ```
 
-You see `PASS` lines for the deployed code, the source link, the backing inside Intents, the refusal room, the wallet-signed purchase, the relayer's key, the round trip on both chains, and the hosted page and relayer, then `Every claim above holds on chain.` It takes under a minute. One line is a `NOTE` until the contract's keys are deleted ([Limits](#limits)).
+You see `PASS` lines for the deployed code, the source link, the contract's empty key list, the backing inside Intents, the refusal room, the wallet-signed purchase, the relayer's key, the round trip on both chains, and the hosted page and relayer, then `Every claim above holds on chain.` It takes under a minute.
 
 **4. Send a refusal yourself.** You need a NEAR wallet with about 0.1 NEAR free. On the board, open a series and pull a lever marked locked, or choose "Send one yourself" under Refusals.
 Your wallet shows the call. You see "Refused by chain" and the contract's own error, such as `ERR_NOT_WRITER`, with your transaction hash. It costs a fraction of a cent in gas, and nothing else moves.
@@ -88,6 +88,7 @@ No demo mode, no seeded database, no fixtures. Every figure in the app is a cont
 | Claim | Check it | Evidence |
 |---|---|---|
 | The contract is live and its code is this repo's | [`warrant-options.near`](https://nearblocks.io/address/warrant-options.near), `code_hash DADQfyxq…svgYz`, built reproducibly at tag `mainnet-v0.1.0`; the source link is on chain (NEP-330) | E-031 |
+| Nobody holds the contract's keys, so nobody can deploy new code | `near account list-keys warrant-options.near network-config mainnet now` prints an empty table. [The last key's deletion](https://nearblocks.io/txns/A1mX5E2cJSUkjWMhiQoZ1bn5fJCekprQBHJgBb11qi5j) | E-035 |
 | Collateral sits inside Intents, under the contract's own account | `mt_balance_of` on `intents.near` for `warrant-options.near`, compared with what every series owes (`verify.mjs`, or the "Backed 1:1" line in the app) | E-031 |
 | Every refusal the contract names fires on mainnet | 28 real attempts reach all 26 named refusals, refused attempts move no money, and 3 honest calls go through. Hashes are in [`web/.env.production`](web/.env.production), e.g. the writer reclaiming early: [`8vPwm6Qr…`](https://nearblocks.io/txns/8vPwm6QrKDHkM2EtSYA5gT64qzuB4nTayz5zePbGt5Xt) `ERR_NOT_EXPIRED` | E-031 |
 | A full cycle ran: write, buy, exercise, expire, reclaim | [Write](https://nearblocks.io/txns/2L53cjfgp4yB2Ptf4FqDHxqbT4ZKJTY4G1RgUkPrdE4F) · [buy](https://nearblocks.io/txns/Fy1eGLFp1a3zXnmzEZLb2mMH1hrPCVtep2F5TbDZsXZ2) · [exercise](https://nearblocks.io/txns/AGhabFx252CkRkNF4z5di7k3pWsLDmHTTQ2ZxG4SPurD) · [reclaim after expiry](https://nearblocks.io/txns/61BMogv9VnjWZYhs4Bsn4yJV8Dbyh3ViYSYkUtuA1yBJ) · [reclaim refused the second time](https://nearblocks.io/txns/FwHdsPWaFsyL3tUvquzrvTU2H4BVV1LrRvygCd2xAWxW) | E-031 |
@@ -116,6 +117,7 @@ What makes the lock hold:
 
 - The contract credits only what `intents.near` itself reports, and every payout is scheduled and accounted for ([SPEC](docs/SPEC.md)).
 - There's no owner path to the money. The owner can only edit the token allowlist.
+- The contract's account has no keys, so its code can't be replaced ([E-035](docs/EVIDENCE.md)).
 - About 32,000 random steps check the books against the transfers actually scheduled, and 12 of 12 injected bugs are caught ([E-028](docs/EVIDENCE.md), [E-029](docs/EVIDENCE.md)).
 
 ### NEAR's role
@@ -144,13 +146,15 @@ NEAR technology used: NEAR Intents (`mt_transfer_call`, `mt_transfer`, `execute_
 ## Limits
 
 - **Not audited, demo sizes.** The series on mainnet are small and were written by accounts I control, disclosed in [E-031](docs/EVIDENCE.md) and [E-032](docs/EVIDENCE.md). What isn't proven yet is listed in [docs/STATE.md](docs/STATE.md).
-- **Keys.** Whoever holds a full-access key on the contract's account could deploy new code that moves the collateral, and today one exists. The plan is to delete every key before submission and let anyone check it with one command ([D-035](docs/DECISIONS.md)). Until then, "can't default" depends on that key holder.
-- **Retiring.** From 2026-11-26, once the contract holds nothing for anyone, anyone can retire it: its account is deleted and its storage deposit returns to its owner. It moves no tokens, and it refuses while it holds a single unit. A writer who never reclaims keeps it from retiring ([D-038](docs/DECISIONS.md), [SPEC](docs/SPEC.md)).
+- **No keys, so no patches.** The contract's account has no access keys, which is what makes the lock checkable. It also means a bug can't be fixed: the code stays as it is ([D-035](docs/DECISIONS.md), [E-035](docs/EVIDENCE.md)).
+- **Smallest series.** Writing a series takes about $20 of collateral: 5 wNEAR or 20 USDC. That was raised after the film and the small series on the board were written, so a write the size of the film's is now refused with `ERR_BELOW_MIN`. Buying, exercising and reclaiming have no minimum ([D-045](docs/DECISIONS.md)).
+- **Retiring.** From 2026-11-26, once the contract holds nothing for anyone, anyone can retire it: its account is deleted and its storage deposit returns to its owner. It moves no tokens, and it refuses while it holds a single unit. A writer who never reclaims keeps it from retiring, and so would longs spread across about 60 to 100 more accounts, because the chain won't delete an account holding over 10 KB of state. Nobody's tokens are at risk either way, only that deposit ([D-038](docs/DECISIONS.md), [D-045](docs/DECISIONS.md), [SPEC](docs/SPEC.md)).
+- **It hasn't retired yet.** `retire` has only run on the real runtime in the sandbox, because it can't run on mainnet before 2026-11-26 ([E-029](docs/EVIDENCE.md)).
 - **Storage.** The contract pays for its own storage from a finite balance. Filling it would refuse transactions that add state until someone tops it up.
 - **Wallets.** Only Intear is exercised among NEAR wallets ([D-040](docs/DECISIONS.md)). The EVM round trip was signed by a local key in the browser, not an extension, so a real extension's prompt is unproven. Wallets with no NEAR account means EVM only; Solana and passkey signers aren't built ([D-030](docs/DECISIONS.md)).
 - **Relayer.** Its gas allowance is finite, about 40 more actions. When it runs out, EVM wallets are told so and NEAR wallets aren't affected ([D-042](docs/DECISIONS.md)).
 - **Reads.** The page reads through free public nodes and fails over between them. Under heavy use from one address, reads can slow down.
-- **Market.** No sorting or search, and offers are fixed-price with no order book. There's no market maker, so the board has offers only when someone lists ([D-043](docs/DECISIONS.md)).
+- **Market.** No sorting or search, and offers are fixed-price with no order book. There's no market maker ([D-043](docs/DECISIONS.md)). The offers on the board are two small series I wrote and listed at 0.01 USDC, so a visitor has something to buy.
 - **Physical settlement.** A holder must bring the strike to exercise. There's no cash settlement by design ([D-002](docs/DECISIONS.md)).
 - **1Click's fee.** It's used without a partner key, so its quotes include the extra fee for that ([D-018](docs/DECISIONS.md)).
 

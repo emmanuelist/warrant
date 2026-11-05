@@ -169,6 +169,10 @@ Verified facts about everything this project depends on. Each entry says how it 
 
 **An account holding more than 10 KB of state can't be deleted (2026-11-05).** The code doesn't count toward that. In the sandbox, `retire` with 12,143 bytes of state fails at the deletion unless the contract clears its state first, and passes when it does (E-029). A series costs about 400 bytes.
 
+**Deleting an account's last key works, and owner calls carry on (2026-11-05).** `near account delete-keys <id> public-keys <key> network-config mainnet sign-with-legacy-keychain send` can delete the key that signs it. After that `near account list-keys` prints an empty table, and `view_access_key_list` returns `keys: []`. An owner on a separate account can still call owner methods, because only signing as the locked account needs its keys (E-035).
+
+**Reading how much state an account holds (2026-11-05).** `view_account.storage_usage` minus the length of `view_code` is what counts toward the 10 KB deletion limit. The account itself is 100 bytes of it, and each state entry costs its key, its value and 40 bytes. `view_state` with an empty prefix lists the entries (E-035).
+
 **A view call can't reach a contract's refusal (2026-11-05).** `query call_function` does run a change method, but it can't attach a deposit, so `wrap.near.near_withdraw` and `intents.near.mt_transfer` both stop at "Requires attached deposit of exactly 1 yoctoNEAR". There is no `eth_call` equivalent for our 1-yocto methods, so the refusal room sends real transactions.
 
 **Devnet signer (D-017)**

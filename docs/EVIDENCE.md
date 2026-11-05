@@ -37,6 +37,7 @@ Append-only proof log. Every claim in the README, demo or submission points to a
 | E-032 | 2026-11-05 | A wallet with no NEAR account did the whole round trip on mainnet through the hosted page and relayer: USDC in from Base, bought, exercised, wrote a put, and was paid back on Base. The same `0x` account appears on every leg. The relayer signed with its function-call key and spends about 0.0018 NEAR per action | [Paid on Base](https://basescan.org/tx/0xa3a88f87aa6663d4539a1a7151e93c9ddb441e79279d5096434298d34529f172) · [deposit](https://basescan.org/tx/0xbd6289cc629a617fd25d6f0ecadde052a58421a3eb2d67d8704deb31bb340b1e) · [relayed exercise](https://nearblocks.io/txns/EyQj34zmL54Cm3fCLW8AB6Qf9DFxRMNuRvSdVNRSoNw1); output below | (this branch) |
 | E-033 | 2026-11-05 | A position moved between accounts as an Intents asset on mainnet, signed in a real wallet: from Warrant's ledger into Intents, across to a `0x` account, and back to Warrant's ledger through the relayer. With E-031 and E-032 this meets M1 and M2. `scripts/verify.mjs` checks these claims from a terminal with no key, and a clean clone of `mainnet-v0.1.0` rebuilds to the deployed `code_hash` | [Into Intents](https://nearblocks.io/txns/2nk3oMrDNLYcdQ2WAfRtN6YCeYQV4G3SCYnJ287evCxD) · [to the `0x` account](https://nearblocks.io/txns/2zXKYV6nrKdtjVhg2zid8oEzXcNZRuyqym1QaEZzP1eP) · [back through the relayer](https://nearblocks.io/txns/GZ58bApzGnChGTD1hP7d8mmzsct2PZwAZjPEt89MnWVB); output below | (this branch) |
 | E-034 | 2026-11-05 | The film's story ran as one continuous take on mainnet, on series 9: a real wallet wrote a call, the same wallet was refused its collateral back, a `0x` wallet paid in from Base, bought, exercised and was paid on Base, the chain's clock opened the lock on camera, and the same press paid out. Every moment is measured from the take, and a take that misses one fails | [Refused](https://nearblocks.io/txns/5CZPK5VjqZBp1CBcNTKpmMGUpJMLyQkmPLKAB1c4DLhJ) · [reclaim after expiry](https://nearblocks.io/txns/7H3qFaWrfgT5X4UiJAssdivXvJp5ZKojbRsn6m3jUhRb) · [paid on Base](https://basescan.org/tx/0x8da626d385c7ded1e1a2563b91d3f560263aa60b5768c9691a5243516ea42508) · [the route](https://explorer.near-intents.org/transactions/07be69cf0ef766b95cdec24f206656ef6deb6d1107a3a63cc1650a59b1f002a5); output below | (this branch) |
+| E-035 | 2026-11-05 | The contract's account has no keys. Its last access key is deleted, `view_access_key_list` returns none on three nodes, `near account list-keys` prints an empty table, and `verify.mjs` says so. The `code_hash` is unchanged. The smallest series is now about $20 of collateral (D-045), two small series have offers on the board, and `retire` would leave about 1.7 KB of state, under the chain's limit for deleting an account | [The deletion](https://nearblocks.io/txns/A1mX5E2cJSUkjWMhiQoZ1bn5fJCekprQBHJgBb11qi5j); output below | (this branch) |
 
 ## E-001 output
 ~~~text
@@ -1044,4 +1045,49 @@ the room read back live: 28 refused, 3 honest, 0 off, 0 unread
 
 Capture: 2280x1284 at 80 to 99 fps through the browser's screencast; 2x held 8 fps with a sheet's blur open (D-044).
 Draft master: 139.5 s, 1920x1080, -16.0 LUFS, true peak -2.3 dBFS, no black frames (ffmpeg blackdetect, ebur128).
+~~~
+
+## E-035 output
+~~~
+$ near account list-keys warrant-options.near network-config mainnet now
++---+------------+-------+-------------+
+| # | Public Key | Nonce | Permissions |
++---+------------+-------+-------------+
++---+------------+-------+-------------+
+
+view_access_key_list, finality final
+  rpc.mainnet.near.org    keys 0  block 223176643
+  near.drpc.org           keys 0  block 223176645
+  free.rpc.fastnear.com   keys 0  block 223176646
+
+deleted ed25519:7P8ExQ4BtX49p9oxU1zNmmUuXVkeFge3wSy9v4YPC7mm   A1mX5E2cJSUkjWMhiQoZ1bn5fJCekprQBHJgBb11qi5j
+
+$ node scripts/verify.mjs
+PASS  contract code              warrant-options.near code_hash DADQfyxqwetsaZBh5n7JEQ8MnwZKQiqzCxaS465svgYz
+PASS  contract keys              none: nobody can deploy new code, only its own retire can delete it
+...
+Every claim above holds on chain.
+
+The smallest series, get_config after the owner's calls, from a separate account that needs no key on the contract
+  nep141:wrap.near                5 wNEAR       Bm2zNPpYDypEue8Ghw8sSgNQKgUkmh6LPzpX5xiPjZMx
+  nep141:17208628...33a1          20 USDC       9bWXviyar5SB4gA7mBErQWZtR7fLVvS77ziVYNapFBA8
+  nep141:btc.omft.near            25,000 sats   SEKvM34nfEaMn2THvqRSwBV1myj59UnLq1sBnu9Xjmm
+
+The board, written before the rise, all expiring 2026-11-26 00:00 UTC
+  series 10, 2 calls, 0.05 wNEAR each, strike 0.225 USDC   EpbqXAWp6EcE828zNQQsntMLBjsSADQiaU5xD78xajdG
+    offer 8, 2 at 0.01 USDC                                Gbv7FnJmCzMXbkomDFqviD9TzNacjasKswqq95xNnfpq
+  series 11, 2 puts, 0.05 wNEAR each, strike 0.18 USDC     DLiF8hdVmhViAJJkRWJTg89RsBn3X4QxxVoVxsVAdnJA
+    offer 9, 2 at 0.01 USDC                                DgwRhvg8XhbJJ9RiaV497edLd8u3uhASHReuR9DrkXtf
+
+What retire would leave: view_account, view_code, view_state
+  storage_usage 333,770, code 326,736, so 7,034 bytes beyond the code
+  the account 100, the root 227, 11 long balances 1,331 = 1,658 bytes once retire clears series, offers and allowlist
+  a further long balance costs 133 bytes for a 64-character account, fewer for a shorter name
+
+The Write form on the production build against mainnet, 1440 and 390, no overflow
+  it opens at size 5, "Locks 5.00 wNEAR", "Smallest series the contract takes 5.00 wNEAR"
+  below the minimum, connected, on the devnet: "The contract's minimum for wNEAR collateral is 0.10 wNEAR."
+
+The film's keys chapter, re-rendered from the output above; the rest of the take is E-034
+Master: 139.5 s, 1920x1080, -16.0 LUFS, peak -2.3 dBFS, no black frames (ffmpeg blackdetect, ebur128).
 ~~~

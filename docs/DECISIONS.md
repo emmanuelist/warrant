@@ -646,3 +646,23 @@ The P2s: the levers and the board contradicted the sheets; lamp colours broke "b
 
 **Consequences:** The pipeline lives in `internal/film`, private, as in the earlier entries. The keys chapter can be re-rendered on its own, so it can show the account after the lock.
 
+## D-045 · The smallest series rises to about $20, after the film · 2026-11-05 · accepted · refines D-038, D-043
+**Context:** With the keys gone (D-035), `retire` (D-038) is the only way the contract's deposit of about 3.5 NEAR comes back, and it refuses while any series holds anything. At the first minimums of 0.05 wNEAR, 0.2 USDC and 1,000 sats, abandoning a series cost about 20 cents and could hold that deposit up for good. The owner is a separate account, so `allow_token` still works with no keys on the contract.
+
+**Decision:**
+- **Minimums of 5 wNEAR, 20 USDC and 25,000 sats,** about $20 on 2026-11-05. Abandoning a series now costs more than the deposit it would hold up.
+- **The film keeps its smaller write.** The take's series was legal when it was written (E-034), and a new take at the new minimum would break the $2 limit on demo trades (D-004). The README's limits say the minimum rose after filming.
+- **The board keeps something cheap to buy.** Two series written before the rise have offers at 0.01 USDC, so a visitor can buy and exercise for cents. They're the builder's own, and the README says so. The agent still stays out (D-043).
+- **The form opens at the minimum and always shows it,** so nobody learns it from a refusal.
+
+**Alternatives:**
+- Keep the old minimums: a stranger could hold the deposit up for 20 cents.
+- A higher minimum: it would shut out more real writers and protect nothing further, since the deposit is worth less than $20 already.
+- Re-shoot at $20: over the demo limit, and it would prove nothing new.
+
+**What this doesn't stop:**
+- A writer can still hold `retire` up with a $20 series, for as long as they leave their own $20 in it.
+- `retire` can't clear the ledger of longs, and about 60 to 100 more holdings than today's would keep its state over the chain's 10 KB limit for deleting an account (E-035). One $20 series could be split that way for gas, and its collateral taken back afterwards. It would earn nothing and cost only the deposit. Refusing new series when judging ends closes this path (#25).
+
+**Consequences:** A visitor needs about $20 to write a series and cents to buy one. #25 gains a step: `disallow_token` for every token once the judging window ends.
+
