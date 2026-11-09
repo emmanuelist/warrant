@@ -1,8 +1,6 @@
 # Evidence
 Append-only proof log. Every claim in the README, demo or submission points to an entry here.
 
-Entries that cite `docs/renders/` point to devnet screenshots removed on 2026-11-09 (D-048). They are in git history: `git show 361ec8e:docs/renders/<file>`.
-
 | # | Date | Claim | Proof | Commit |
 |---|---|---|---|---|
 | E-001 | 2026-10-20 | Pyth on NEAR is stale: the BTC/USD price was published 2026-08-25, no update since 2026-08-26, and Hermes requires an API key | Commands and output below; last update tx [C5DjFq2…](https://nearblocks.io/txns/C5DjFq2SJEttB7Lh5bfijZbeGSCTtUt4VyzpLFekitz5) | pre-commit (D-005) |
