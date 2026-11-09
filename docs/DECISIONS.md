@@ -695,7 +695,7 @@ The P2s: the levers and the board contradicted the sheets; lamp colours broke "b
 ## D-048 · Screenshots of earlier designs leave the repo · 2026-11-09 · accepted · refines D-011
 **Context:** `docs/renders/` held 36 devnet screenshots from 2026-10-20 to 27, taken before mainnet and before the later design passes (v3, v4 and older). No README or doc linked a file, but with the repo public they read as the current UI, and at least one later session reviewed them as if they were.
 
-**Decision:** Remove them. The UI is judged from the live site or a fresh render (docs/DESIGN.md). E-006 to E-012 and D-020s that cite them stay as written; the files are at `git show 361ec8e:docs/renders/<file>`.
+**Decision:** Remove them. The UI is judged from the live site or a fresh render (docs/DESIGN.md). The evidence and decision entries that cite them stay as written; the files are at `git show 361ec8e:docs/renders/<file>`.
 
 **Alternatives:** Keep them with a "historical" label: a reader skimming images still sees an old product.
 
