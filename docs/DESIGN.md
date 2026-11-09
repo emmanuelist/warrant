@@ -2,6 +2,8 @@
 
 Single home for how Warrant looks and behaves. Product truth is in SPEC.md; this file decides how that truth is shown. Current world: **studio light, the vault's time lock** (D-025, 2026-10-21), which replaced the signal-box interlocking (D-015).
 
+Judge the UI from https://warrant-options.vercel.app or a fresh render of this branch, never from old screenshots: the devnet renders of earlier designs were removed on 2026-11-09 and live only in git history.
+
 ## Discovery
 
 **Product.** Options that can't default and need no oracle: the collateral is locked inside NEAR Intents until expiry.
