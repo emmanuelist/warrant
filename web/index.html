@@ -19,7 +19,16 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- What a reader without JavaScript gets. React replaces all of it on load; the live page reads every figure from mainnet. -->
+      <main style="max-width:44rem;margin:4rem auto;padding:0 1rem;font:16px/1.6 system-ui,sans-serif;color:#1b2120">
+        <h1>Warrant</h1>
+        <p><strong>Options that can't default and need no oracle: the collateral is locked inside NEAR Intents until expiry.</strong></p>
+        <p>An options market on NEAR mainnet. A writer locks collateral inside <code>intents.near</code> and receives options, each a NEP-245 token. A holder can exercise until expiry, paying the strike and receiving the underlying inside Intents. After expiry the writer takes back what wasn't exercised. No price feed is consulted. The contract <code>warrant-options.near</code> has no access keys, so nobody can change its code.</p>
+        <p>Last read from mainnet on 2026-11-14 at 23:38 UTC: 0.20 wNEAR and 0.56 USDC locked inside Intents, backed one to one; 11 series, 4 holding collateral; 28 of 28 attempts in the refusal room refused by name.</p>
+        <p><a href="https://github.com/emmanuelist/warrant">Code and the steps to check every claim</a> · <a href="https://nearblocks.io/address/warrant-options.near/contract/code">The contract on NearBlocks</a></p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
